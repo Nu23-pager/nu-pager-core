@@ -8,29 +8,37 @@
 
   <style>
     :root{
-      --bg:#070808;
-      --panel:#0e1111;
-      --line:#6bffb0;
-      --line-soft:#3ccf84;
-      --text:#d8ffe7;
-      --accent:#ffd166;
-      --danger:#ff8c69;
+      --bg:#0a0c0b;
+      --panel:#111513;
+      --panel-2:#161b18;
+      --line:#7fb9a2;
+      --line-soft:#547566;
+      --text:#d8dccf;
+      --muted:#9aa08f;
+      --accent:#b89a63;
+      --accent-soft:#7d6841;
+      --warn:#d8b36a;
     }
 
     *{
       box-sizing:border-box;
     }
 
-    body{
+    html, body{
       margin:0;
+      min-height:100%;
+    }
+
+    body{
       min-height:100vh;
       background:
-        radial-gradient(circle at top, rgba(255,209,102,0.08), transparent 25%),
-        radial-gradient(circle at bottom, rgba(92,255,154,0.06), transparent 30%),
+        linear-gradient(rgba(255,255,255,0.015), rgba(255,255,255,0.01)),
+        radial-gradient(circle at top, rgba(184,154,99,0.04), transparent 28%),
+        radial-gradient(circle at bottom, rgba(127,185,162,0.03), transparent 32%),
         var(--bg);
       color:var(--text);
       font-family:'Orbitron', monospace;
-      padding:22px;
+      padding:8px;
       letter-spacing:0.4px;
       position:relative;
       overflow-x:hidden;
@@ -43,140 +51,154 @@
       pointer-events:none;
       background:repeating-linear-gradient(
         to bottom,
-        rgba(255,255,255,0.00) 0px,
-        rgba(255,255,255,0.00) 2px,
-        rgba(92,255,154,0.035) 3px
+        rgba(255,255,255,0) 0px,
+        rgba(255,255,255,0) 2px,
+        rgba(160,180,160,0.025) 3px
       );
+      opacity:0.45;
       mix-blend-mode:screen;
-      opacity:0.5;
     }
 
     .shell{
-      max-width:760px;
+      max-width:720px;
+      min-height:calc(100vh - 16px);
       margin:0 auto;
-      border:1px solid rgba(255,209,102,0.25);
-      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      box-shadow:
-        0 0 0 1px rgba(92,255,154,0.08) inset,
-        0 0 24px rgba(92,255,154,0.06),
-        0 0 60px rgba(255,209,102,0.03);
-      padding:18px;
-      border-radius:12px;
+      padding:12px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.008)),
+        linear-gradient(135deg, rgba(184,154,99,0.03), transparent 30%),
+        var(--panel);
+      border:1px solid rgba(184,154,99,0.22);
+      border-radius:10px;
       position:relative;
+      display:flex;
+      flex-direction:column;
+      box-shadow:
+        inset 0 0 0 1px rgba(127,185,162,0.06),
+        0 0 0 1px rgba(0,0,0,0.35);
     }
 
     .shell::before{
       content:"";
       position:absolute;
-      inset:8px;
-      border:1px solid rgba(255,209,102,0.14);
-      border-radius:8px;
+      inset:7px;
+      border:1px solid rgba(184,154,99,0.14);
+      border-radius:7px;
       pointer-events:none;
     }
 
     .topbar{
       display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:12px;
-      margin-bottom:16px;
-    }
-
-    .title-wrap{
-      display:flex;
       flex-direction:column;
-      gap:6px;
+      gap:8px;
+      margin-bottom:8px;
     }
 
     .title{
-      color:var(--line);
-      font-size:28px;
+      font-size:20px;
       font-weight:600;
-      text-shadow:0 0 8px rgba(92,255,154,0.28);
+      color:#98d3bc;
+      letter-spacing:1px;
     }
 
     .sub{
+      font-size:10px;
+      line-height:1.35;
       color:var(--accent);
-      font-size:11px;
-      opacity:0.9;
+      text-transform:uppercase;
+      opacity:0.92;
     }
 
     .unit{
-      border:1px solid rgba(92,255,154,0.45);
-      color:var(--text);
-      padding:10px 12px;
-      min-width:210px;
-      text-align:left;
-      background:rgba(10,18,15,0.8);
-      box-shadow:0 0 12px rgba(92,255,154,0.08) inset;
+      border:1px solid rgba(127,185,162,0.4);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)),
+        var(--panel-2);
+      padding:10px;
     }
 
     .unit-label{
-      font-size:11px;
+      font-size:10px;
       color:var(--accent);
-      margin-bottom:4px;
-      opacity:0.9;
+      margin-bottom:6px;
+      text-transform:uppercase;
     }
 
     .unit-id{
-      font-size:20px;
-      color:var(--line);
-      text-shadow:0 0 8px rgba(92,255,154,0.18);
+      font-size:18px;
+      color:#9ad0bb;
     }
 
     .status{
-      margin:10px 0 14px;
-      color:var(--accent);
+      margin:6px 0 10px;
+      color:var(--warn);
       font-size:12px;
       min-height:18px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .blinker{
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      background:#8bb99f;
+      opacity:0.85;
+      animation:blink 1.4s infinite;
+      flex:0 0 auto;
+    }
+
+    @keyframes blink{
+      0%,100%{opacity:0.25}
+      50%{opacity:0.9}
     }
 
     .screen-frame{
-      border:1px solid rgba(255,209,102,0.28);
-      padding:10px;
-      background:rgba(5,8,8,0.75);
-      box-shadow:
-        0 0 0 1px rgba(92,255,154,0.12) inset,
-        0 0 24px rgba(92,255,154,0.04) inset;
-      margin-bottom:16px;
+      flex:1;
+      min-height:0;
+      border:1px solid rgba(184,154,99,0.22);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.004)),
+        #0b0f0d;
+      padding:8px;
+      margin-bottom:10px;
     }
 
     #screen{
-      border:2px solid var(--line-soft);
-      min-height:360px;
-      max-height:420px;
+      height:100%;
+      min-height:220px;
       overflow:auto;
-      padding:14px;
+      border:2px solid var(--line-soft);
       background:
-        linear-gradient(180deg, rgba(92,255,154,0.03), rgba(255,209,102,0.02)),
-        #060808;
-      box-shadow:
-        inset 0 0 18px rgba(92,255,154,0.08),
-        0 0 18px rgba(92,255,154,0.08);
+        linear-gradient(180deg, rgba(127,185,162,0.02), rgba(184,154,99,0.02)),
+        #0a0d0c;
+      padding:10px;
     }
 
     .empty{
-      color:#87cfa8;
-      opacity:0.7;
-      font-size:13px;
+      color:var(--muted);
+      font-size:12px;
+      opacity:0.8;
     }
 
     .msg{
-      border-left:3px solid var(--accent);
+      margin-bottom:10px;
       padding:8px 10px;
-      margin-bottom:12px;
-      background:rgba(255,209,102,0.04);
+      background:rgba(255,255,255,0.02);
+      border-left:4px solid var(--accent);
     }
 
     .meta{
+      font-size:11px;
       color:var(--accent);
-      font-size:12px;
-      margin-bottom:6px;
+      margin-bottom:4px;
+      text-transform:uppercase;
     }
 
     .text{
+      font-size:14px;
       color:var(--text);
-      font-size:15px;
       line-height:1.45;
       word-break:break-word;
     }
@@ -184,13 +206,14 @@
     .controls{
       display:grid;
       grid-template-columns:1fr;
-      gap:10px;
+      gap:8px;
     }
 
     .label{
-      font-size:11px;
+      font-size:10px;
       color:var(--accent);
       margin-bottom:4px;
+      text-transform:uppercase;
     }
 
     .field{
@@ -200,47 +223,42 @@
 
     input{
       width:100%;
-      padding:14px 12px;
-      background:#050707;
+      padding:12px 10px;
+      background:#0a0d0c;
       color:var(--text);
       border:1px solid var(--line-soft);
       outline:none;
       font-family:'Orbitron', monospace;
       font-size:15px;
-      box-shadow:inset 0 0 10px rgba(92,255,154,0.05);
     }
 
     input::placeholder{
-      color:#7a8f83;
+      color:#7f8678;
     }
 
     input:focus{
       border-color:var(--accent);
-      box-shadow:
-        0 0 0 1px rgba(255,209,102,0.25),
-        inset 0 0 10px rgba(92,255,154,0.08);
+      background:#0c100e;
     }
 
     .actions{
       display:flex;
-      gap:12px;
+      gap:10px;
       align-items:center;
       flex-wrap:wrap;
-      margin-top:4px;
+      margin-top:2px;
     }
 
     button{
-      padding:14px 18px;
-      min-width:150px;
-      border:none;
-      cursor:pointer;
+      padding:12px 16px;
+      min-width:140px;
+      border:1px solid rgba(184,154,99,0.45);
+      background:
+        linear-gradient(180deg, #b89a63, #8a7348);
+      color:#111;
       font-family:'Orbitron', monospace;
-      font-size:15px;
-      background:linear-gradient(180deg, #ffe08d, var(--accent));
-      color:#151515;
-      box-shadow:
-        0 0 12px rgba(255,209,102,0.18),
-        inset 0 0 10px rgba(255,255,255,0.15);
+      font-size:14px;
+      cursor:pointer;
     }
 
     button:disabled{
@@ -249,47 +267,40 @@
     }
 
     .hint{
-      color:#8db89c;
-      font-size:12px;
-    }
-
-    .blinker{
-      display:inline-block;
-      width:9px;
-      height:9px;
-      border-radius:50%;
-      background:var(--line);
-      box-shadow:0 0 10px rgba(92,255,154,0.5);
-      animation:blink 1.2s infinite;
-      margin-right:8px;
-      vertical-align:middle;
-    }
-
-    @keyframes blink{
-      0%, 100% { opacity:0.25; transform:scale(0.9); }
-      50% { opacity:1; transform:scale(1.05); }
+      font-size:11px;
+      color:var(--muted);
+      text-transform:uppercase;
     }
 
     @media (max-width:640px){
-      .topbar{
-        flex-direction:column;
+      body{
+        padding:6px;
       }
 
-      .unit{
-        width:100%;
-        min-width:unset;
+      .shell{
+        min-height:calc(100vh - 12px);
+        padding:10px;
       }
 
       .title{
-        font-size:22px;
+        font-size:18px;
+      }
+
+      .unit-id{
+        font-size:16px;
       }
 
       #screen{
-        min-height:320px;
+        min-height:200px;
       }
 
       button{
         width:100%;
+        min-width:unset;
+      }
+
+      .hint{
+        display:none;
       }
     }
   </style>
@@ -297,10 +308,8 @@
 <body>
   <div class="shell">
     <div class="topbar">
-      <div class="title-wrap">
-        <div class="title">NU PAGER</div>
-        <div class="sub">REBEL SIGNAL NODE · STEAM-CORE COMMUNICATOR</div>
-      </div>
+      <div class="title">NU PAGER</div>
+      <div class="sub">REBEL SIGNAL NODE · STEAM-CORE COMMUNICATOR</div>
 
       <div class="unit">
         <div class="unit-label">UNIT IDENTIFICATION</div>
@@ -308,7 +317,10 @@
       </div>
     </div>
 
-    <div class="status" id="status"><span class="blinker"></span>LINKING TO NETWORK...</div>
+    <div class="status" id="status">
+      <span class="blinker"></span>
+      LINKING TO NETWORK...
+    </div>
 
     <div class="screen-frame">
       <div id="screen">
