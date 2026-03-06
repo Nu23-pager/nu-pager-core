@@ -1,102 +1,52 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NU-PAGER</title>
+<script type="module">
 
-<style>
-body{
-  background:#111;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-  font-family:monospace;
-}
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, onChildAdded } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-#pager{
-  width:320px;
-  background:#e9e9e9;
-  border-radius:25px;
-  padding:20px;
-  box-shadow:0 10px 40px rgba(0,0,0,0.6);
-}
+const firebaseConfig = {
+  apiKey: "AIzaSyDHCoBm1A-0XNYIgX6TXAXA0vkb5P_hJs4",
+  authDomain: "nu-pager-network.firebaseapp.com",
+  databaseURL: "https://nu-pager-network-default-rtdb.firebaseio.com",
+  projectId: "nu-pager-network",
+  storageBucket: "nu-pager-network.firebasestorage.app",
+  messagingSenderId: "1037097080836",
+  appId: "1:1037097080836:web:cf63b5d9125ef13c6cfd51"
+};
 
-#title{
-  text-align:center;
-  font-weight:bold;
-  letter-spacing:2px;
-}
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-#device{
-  text-align:center;
-  font-size:12px;
-  margin-bottom:10px;
-}
+const messagesRef = ref(db,"messages");
 
-#screen{
-  background:#b7ffb7;
-  border-radius:10px;
-  padding:10px;
-  height:120px;
-  font-size:14px;
-  overflow:auto;
-}
+const input = document.getElementById("msg");
+const sendBtn = document.getElementById("send");
+const screen = document.getElementById("screen");
 
-input{
-  width:100%;
-  margin-top:8px;
-  padding:8px;
-  border-radius:6px;
-  border:1px solid #ccc;
-}
+sendBtn.onclick = () => {
 
-button{
-  width:100%;
-  margin-top:10px;
-  padding:10px;
-  border:none;
-  border-radius:8px;
-  background:#222;
-  color:white;
-}
-</style>
-</head>
+let text = input.value;
 
-<body>
+if(!text) return;
 
-<div id="pager">
+push(messagesRef,{
+text:text,
+time:Date.now()
+});
 
-<div id="title">NU-PAGER</div>
-<div id="device">DEVICE : NP-0001</div>
+input.value="";
+};
 
-<div id="screen">
-Booting NU-PAGER 1999...<br>
-Ready.
-</div>
+onChildAdded(messagesRef,(data)=>{
 
-<input id="to" placeholder="send to device id">
-<input id="name" placeholder="your name">
-<input id="msg" placeholder="message (80 chars max)">
+let msg = data.val();
 
-<button onclick="send()">SEND</button>
+let div = document.createElement("div");
 
-</div>
+div.innerText = msg.text;
 
-<script>
-function send(){
-  const to=document.getElementById("to").value
-  const name=document.getElementById("name").value
-  const msg=document.getElementById("msg").value
+screen.appendChild(div);
 
-  const screen=document.getElementById("screen")
+});
 
-  const time=new Date().toLocaleTimeString()
-
-  screen.innerHTML += "<br>["+time+"] "+name+" : "+msg
-}
 </script>
-
-</body>
-</html>
