@@ -11,7 +11,10 @@ color:#00ff88;
 font-family:monospace;
 padding:20px;
 }
-
+#device{
+margin-bottom:10px;
+color:#7dffbf;
+}
 #screen{
 border:1px solid #00ff88;
 height:300px;
@@ -19,7 +22,6 @@ overflow:auto;
 padding:10px;
 margin-bottom:10px;
 }
-
 input{
 width:70%;
 padding:10px;
@@ -27,104 +29,82 @@ background:black;
 color:#00ff88;
 border:1px solid #00ff88;
 }
-
 button{
 padding:10px;
 background:#00ff88;
 border:none;
 }
 </style>
-
 </head>
 
 <body>
 
 <h3>NU PAGER</h3>
-43 <div id="device"></div>
+<div id="device"></div>
 <div id="screen"></div>
 
 <input id="msg" placeholder="type message">
-
 <button id="send">SEND</button>
 
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, get, set }
+import { getDatabase, ref, push, onChildAdded, get, runTransaction }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
-apiKey: "AIzaSyDHCoBm1A-OXNYIgX6TXAXAovkb5P_hJs4",
-authDomain: "nu-pager-network.firebaseapp.com",
-databaseURL: "https://nu-pager-network-default-rtdb.firebaseio.com",
-projectId: "nu-pager-network",
-storageBucket: "nu-pager-network.firebasestorage.app",
-messagingSenderId: "1037097080836",
-appId: "1:1037097080836:web:cf63b5d9125ef13c6cfd51"
+  apiKey: "AIzaSyDHCoBm1A-0XNYIgX6TXAXA0vkb5P_hJs4",
+  authDomain: "nu-pager-network.firebaseapp.com",
+  databaseURL: "https://nu-pager-network-default-rtdb.firebaseio.com",
+  projectId: "nu-pager-network",
+  storageBucket: "nu-pager-network.firebasestorage.app",
+  messagingSenderId: "1037097080836",
+  appId: "1:1037097080836:web:cf63b5d9125ef13c6cfd51"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const messagesRef = ref(db,"messages");
-let deviceID = localStorage.getItem("deviceID");
-
-async function registerDevice(){
-
- if(!deviceID){
-
-  const counterRef = ref(db,"deviceCounter");
-
-  const snapshot = await get(counterRef);
-
-  let number = snapshot.val() || 0;
-
-  number++;
-
-  await set(counterRef, number);
-
-  deviceID = "NP-" + String(number).padStart(4,"0");
-
-  localStorage.setItem("deviceID",deviceID);
-
- }
-
- document.getElementById("device").innerText = "DEVICE : " + deviceID;
-
-}
-
-registerDevice();
 const input = document.getElementById("msg");
 const sendBtn = document.getElementById("send");
 const screen = document.getElementById("screen");
 
+let deviceID = localStorage.getItem("deviceID");
+
+async function registerDevice(){
+  if(!deviceID){
+    const counterRef = ref(db,"deviceCounter");
+    const result = await runTransaction(counterRef, current => (current || 0) + 1);
+    const number = result.snapshot.val();
+
+    deviceID = "NP-" + String(number).padStart(4,"0");
+    localStorage.setItem("deviceID", deviceID);
+  }
+
+  document.getElementById("device").innerText = "DEVICE : " + deviceID;
+}
+
+await registerDevice();
+
 sendBtn.onclick = ()=>{
+  let text = input.value.trim();
+  if(!text) return;
 
-let text = input.value;
+  push(messagesRef,{
+    deviceID: deviceID,
+    text: text,
+    time: Date.now()
+  });
 
-if(!text) return;
-
-push(messagesRef,{
-text:text,
-time:Date.now()
-});
-
-input.value="";
-
+  input.value = "";
 };
 
 onChildAdded(messagesRef,(data)=>{
-
-let msg = data.val();
-
-let div = document.createElement("div");
-
-div.innerText = msg.text;
-
-screen.appendChild(div);
-
+  let msg = data.val();
+  let div = document.createElement("div");
+  div.innerText = (msg.deviceID ? msg.deviceID + ": " : "") + msg.text;
+  screen.appendChild(div);
 });
-
 </script>
 
 </body>
