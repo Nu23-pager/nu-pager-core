@@ -6,33 +6,41 @@
 
 <style>
 body{
-background:black;
-color:#00ff88;
-font-family:monospace;
-padding:20px;
+  background:black;
+  color:#00ff88;
+  font-family:monospace;
+  padding:20px;
 }
 #device{
-margin-bottom:10px;
-color:#7dffbf;
+  margin-bottom:10px;
+  color:#7dffbf;
 }
 #screen{
-border:1px solid #00ff88;
-height:300px;
-overflow:auto;
-padding:10px;
-margin-bottom:10px;
+  border:1px solid #00ff88;
+  height:300px;
+  overflow:auto;
+  padding:10px;
+  margin-bottom:10px;
 }
 input{
-width:70%;
-padding:10px;
-background:black;
-color:#00ff88;
-border:1px solid #00ff88;
+  width:70%;
+  padding:10px;
+  background:black;
+  color:#00ff88;
+  border:1px solid #00ff88;
+  margin-bottom:10px;
+  display:block;
 }
 button{
-padding:10px;
-background:#00ff88;
-border:none;
+  padding:10px;
+  background:#00ff88;
+  border:none;
+}
+.msg{
+  margin-bottom:10px;
+}
+.meta{
+  color:#7dffbf;
 }
 </style>
 </head>
@@ -43,12 +51,13 @@ border:none;
 <div id="device"></div>
 <div id="screen"></div>
 
+<input id="to" placeholder="send to device (NP-0001)">
 <input id="msg" placeholder="type message">
 <button id="send">SEND</button>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, get, runTransaction }
+import { getDatabase, ref, push, onChildAdded, runTransaction }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
@@ -64,7 +73,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const messagesRef = ref(db,"messages");
+const toInput = document.getElementById("to");
 const input = document.getElementById("msg");
 const sendBtn = document.getElementById("send");
 const screen = document.getElementById("screen");
@@ -73,25 +82,51 @@ let deviceID = localStorage.getItem("deviceID");
 
 async function registerDevice(){
   if(!deviceID){
-    const counterRef = ref(db,"deviceCounter");
+    const counterRef = ref(db, "deviceCounter");
     const result = await runTransaction(counterRef, current => (current || 0) + 1);
     const number = result.snapshot.val();
 
-    deviceID = "NP-" + String(number).padStart(4,"0");
+    deviceID = "NP-" + String(number).padStart(4, "0");
     localStorage.setItem("deviceID", deviceID);
   }
 
   document.getElementById("device").innerText = "DEVICE : " + deviceID;
 }
 
+function addMessage(msg){
+  const box = document.createElement("div");
+  box.className = "msg";
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.innerText = "FROM : " + (msg.from || "UNKNOWN");
+
+  const text = document.createElement("div");
+  text.innerText = msg.text || "";
+
+  box.appendChild(meta);
+  box.appendChild(text);
+  screen.appendChild(box);
+  screen.scrollTop = screen.scrollHeight;
+}
+
 await registerDevice();
 
-sendBtn.onclick = ()=>{
-  let text = input.value.trim();
-  if(!text) return;
+sendBtn.onclick = async ()=>{
+  const to = toInput.value.trim().toUpperCase();
+  const text = input.value.trim();
 
-  push(messagesRef,{
-    deviceID: deviceID,
+  if(!to){
+    alert("Please enter target device ID");
+    return;
+  }
+
+  if(!text){
+    return;
+  }
+
+  await push(ref(db, "messages/" + to), {
+    from: deviceID,
     text: text,
     time: Date.now()
   });
@@ -99,11 +134,9 @@ sendBtn.onclick = ()=>{
   input.value = "";
 };
 
-onChildAdded(messagesRef,(data)=>{
-  let msg = data.val();
-  let div = document.createElement("div");
-  div.innerText = (msg.deviceID ? msg.deviceID + ": " : "") + msg.text;
-  screen.appendChild(div);
+onChildAdded(ref(db, "messages/" + deviceID), (data)=>{
+  const msg = data.val();
+  addMessage(msg);
 });
 </script>
 
