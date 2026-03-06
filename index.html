@@ -40,7 +40,7 @@ border:none;
 <body>
 
 <h3>NU PAGER</h3>
-
+43 <div id="device"></div>
 <div id="screen"></div>
 
 <input id="msg" placeholder="type message">
@@ -50,7 +50,7 @@ border:none;
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded }
+import { getDatabase, ref, push, onChildAdded, get, set }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
@@ -67,7 +67,33 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const messagesRef = ref(db,"messages");
+let deviceID = localStorage.getItem("deviceID");
 
+async function registerDevice(){
+
+ if(!deviceID){
+
+  const counterRef = ref(db,"deviceCounter");
+
+  const snapshot = await get(counterRef);
+
+  let number = snapshot.val() || 0;
+
+  number++;
+
+  await set(counterRef, number);
+
+  deviceID = "NP-" + String(number).padStart(4,"0");
+
+  localStorage.setItem("deviceID",deviceID);
+
+ }
+
+ document.getElementById("device").innerText = "DEVICE : " + deviceID;
+
+}
+
+registerDevice();
 const input = document.getElementById("msg");
 const sendBtn = document.getElementById("send");
 const screen = document.getElementById("screen");
