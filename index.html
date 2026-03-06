@@ -1,17 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NU Pager</title>
+
+<style>
+body{
+background:black;
+color:#00ff88;
+font-family:monospace;
+padding:20px;
+}
+
+#screen{
+border:1px solid #00ff88;
+height:300px;
+overflow:auto;
+padding:10px;
+margin-bottom:10px;
+}
+
+input{
+width:70%;
+padding:10px;
+background:black;
+color:#00ff88;
+border:1px solid #00ff88;
+}
+
+button{
+padding:10px;
+background:#00ff88;
+border:none;
+}
+</style>
+
+</head>
+
+<body>
+
+<h3>NU PAGER</h3>
+
+<div id="screen"></div>
+
+<input id="msg" placeholder="type message">
+
+<button id="send">SEND</button>
+
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded } 
+import { getDatabase, ref, push, onChildAdded }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDHCoBm1A-0XNYIgX6TXAXA0vkb5P_hJs4",
-  authDomain: "nu-pager-network.firebaseapp.com",
-  databaseURL: "https://nu-pager-network-default-rtdb.firebaseio.com",
-  projectId: "nu-pager-network",
-  storageBucket: "nu-pager-network.firebasestorage.app",
-  messagingSenderId: "1037097080836",
-  appId: "1:1037097080836:web:cf63b5d9125ef13c6cfd51"
+apiKey: "AIzaSyDHCoBm1A-OXNYIgX6TXAXAovkb5P_hJs4",
+authDomain: "nu-pager-network.firebaseapp.com",
+databaseURL: "https://nu-pager-network-default-rtdb.firebaseio.com",
+projectId: "nu-pager-network",
+storageBucket: "nu-pager-network.firebasestorage.app",
+messagingSenderId: "1037097080836",
+appId: "1:1037097080836:web:cf63b5d9125ef13c6cfd51"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -23,7 +72,7 @@ const input = document.getElementById("msg");
 const sendBtn = document.getElementById("send");
 const screen = document.getElementById("screen");
 
-sendBtn.onclick = () => {
+sendBtn.onclick = ()=>{
 
 let text = input.value;
 
@@ -35,6 +84,7 @@ time:Date.now()
 });
 
 input.value="";
+
 };
 
 onChildAdded(messagesRef,(data)=>{
@@ -50,3 +100,6 @@ screen.appendChild(div);
 });
 
 </script>
+
+</body>
+</html>
