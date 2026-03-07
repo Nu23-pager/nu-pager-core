@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
   <title>NU Pager Device</title>
   <link
@@ -23,13 +23,7 @@
       --device-bot:#a79f90;
       --device-edge:#817968;
 
-      --metal-dark:#4d4a44;
-      --metal-mid:#7d766b;
-      --metal-light:#cfc7b8;
-
       --screen-bg:#0b0e0d;
-      --screen-bg-2:#111513;
-      --screen-line:#92ada2;
       --screen-line-dark:#60766d;
 
       --text:#edf2ec;
@@ -39,11 +33,13 @@
       --alert-red:#b44239;
       --alert-red-dark:#752820;
 
+      --clear-red:#8e2d2a;
+      --clear-red-dark:#5e1c1a;
+      --clear-red-text:#f1d7d5;
+
       --msg-green:#7fb36f;
-      --msg-green-dark:#55794b;
 
       --plate-text:#2c2922;
-      --shadow:rgba(0,0,0,.45);
     }
 
     *{
@@ -357,15 +353,23 @@
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
     }
 
+    .screen-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      flex:0 0 auto;
+      margin-bottom:6px;
+    }
+
     .status{
       display:flex;
       align-items:center;
       gap:8px;
-      flex:0 0 auto;
-      margin-bottom:6px;
       color:var(--accent);
       font-size:10px;
       text-transform:uppercase;
+      min-width:0;
     }
 
     .dot{
@@ -376,11 +380,46 @@
       border:1px solid var(--alert-red-dark);
       animation:blink 1.25s infinite;
       box-shadow: 0 0 6px rgba(180,66,57,.15);
+      flex:0 0 auto;
     }
 
     @keyframes blink{
       0%,100%{opacity:.22}
       50%{opacity:.98}
+    }
+
+    .clear-wrap{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:3px;
+      flex:0 0 auto;
+    }
+
+    .clear-btn{
+      width:28px;
+      height:28px;
+      border-radius:50%;
+      border:1px solid var(--clear-red-dark);
+      background:radial-gradient(circle at 35% 35%, #ab3d38, var(--clear-red) 65%);
+      color:transparent;
+      cursor:pointer;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.12),
+        0 1px 2px rgba(0,0,0,.25);
+      padding:0;
+    }
+
+    .clear-btn:active{
+      transform:translateY(1px);
+    }
+
+    .clear-label{
+      font-size:7px;
+      color:var(--clear-red-text);
+      letter-spacing:.6px;
+      text-transform:uppercase;
+      line-height:1;
     }
 
     .screen{
@@ -577,9 +616,21 @@
         padding:6px;
       }
 
+      .screen-head{
+        margin-bottom:4px;
+      }
+
       .status{
         font-size:9px;
-        margin-bottom:4px;
+      }
+
+      .clear-btn{
+        width:24px;
+        height:24px;
+      }
+
+      .clear-label{
+        font-size:6px;
       }
 
       .screen{
@@ -658,9 +709,16 @@
 
       <div class="mid">
         <div class="bezel">
-          <div class="status" id="status">
-            <div class="dot"></div>
-            CHANNEL ONLINE
+          <div class="screen-head">
+            <div class="status" id="status">
+              <div class="dot"></div>
+              CHANNEL ONLINE
+            </div>
+
+            <div class="clear-wrap">
+              <button class="clear-btn" id="clearBtn" aria-label="Clear messages">CLEAR</button>
+              <div class="clear-label">CLEAR</div>
+            </div>
           </div>
 
           <div class="screen" id="screen">
@@ -714,12 +772,89 @@
     const toInput = document.getElementById("to");
     const msgInput = document.getElementById("msg");
     const sendBtn = document.getElementById("send");
+    const clearBtn = document.getElementById("clearBtn");
     const screen = document.getElementById("screen");
     const deviceBox = document.getElementById("device");
     const statusBox = document.getElementById("status");
     const emptyState = document.getElementById("emptyState");
 
     let deviceID = localStorage.getItem("deviceID") || "";
+    let audioUnlocked = false;
+    let bootPlayed = false;
+
+    function sleep(ms){
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function beep({
+      frequency = 880,
+      duration = 0.08,
+      type = "square",
+      volume = 0.03
+    } = {}){
+      try{
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if(!AudioContextClass) return;
+
+        const ctx = new AudioContextClass();
+
+        if(ctx.state === "suspended"){
+          await ctx.resume();
+        }
+
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        oscillator.type = type;
+        oscillator.frequency.value = frequency;
+        gain.gain.value = volume;
+
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+
+        oscillator.start();
+
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+
+        oscillator.stop(ctx.currentTime + duration);
+
+        setTimeout(() => {
+          try { ctx.close(); } catch(e) {}
+        }, Math.max(150, duration * 1000 + 60));
+      }catch(e){
+        console.log("beep blocked", e);
+      }
+    }
+
+    async function playBootSound(){
+      if(bootPlayed) return;
+      bootPlayed = true;
+      await beep({ frequency: 740, duration: 0.07, volume: 0.025 });
+    }
+
+    async function playSendSound(){
+      await beep({ frequency: 980, duration: 0.07, volume: 0.03 });
+    }
+
+    async function playReceiveSound(){
+      await beep({ frequency: 720, duration: 0.055, volume: 0.028 });
+      await sleep(85);
+      await beep({ frequency: 920, duration: 0.055, volume: 0.028 });
+    }
+
+    async function playClearSound(){
+      await beep({ frequency: 520, duration: 0.06, volume: 0.028 });
+    }
+
+    async function unlockAudio(){
+      if(audioUnlocked) return;
+      audioUnlocked = true;
+      await playBootSound();
+    }
+
+    document.addEventListener("pointerdown", unlockAudio, { once: true });
+    document.addEventListener("touchstart", unlockAudio, { once: true });
 
     async function registerDevice(){
       if(!deviceID){
@@ -733,6 +868,14 @@
       deviceBox.innerText = deviceID;
       statusBox.innerHTML = '<div class="dot"></div>CHANNEL ONLINE';
       sendBtn.disabled = false;
+    }
+
+    function showEmptyIfNeeded(){
+      if(screen.querySelector(".msg")){
+        if(emptyState) emptyState.style.display = "none";
+      }else{
+        if(emptyState) emptyState.style.display = "block";
+      }
     }
 
     function showMessage(msg){
@@ -759,9 +902,21 @@
       screen.scrollTop = screen.scrollHeight;
     }
 
+    function clearMessages(){
+      screen.querySelectorAll(".msg").forEach(el => el.remove());
+      showEmptyIfNeeded();
+      statusBox.innerHTML = '<div class="dot"></div>LOG PURGED';
+      setTimeout(() => {
+        statusBox.innerHTML = '<div class="dot"></div>CHANNEL ONLINE';
+      }, 1000);
+    }
+
     await registerDevice();
+    showEmptyIfNeeded();
 
     sendBtn.onclick = async () => {
+      await unlockAudio();
+
       const to = toInput.value.trim().toUpperCase();
       const text = msgInput.value.trim();
 
@@ -784,6 +939,8 @@
           time: Date.now()
         });
 
+        await playSendSound();
+
         msgInput.value = "";
         statusBox.innerHTML = '<div class="dot"></div>TRANSMISSION SENT';
 
@@ -799,16 +956,24 @@
       }
     };
 
+    clearBtn.onclick = async () => {
+      await unlockAudio();
+      clearMessages();
+      await playClearSound();
+    };
+
     msgInput.addEventListener("keydown", (e) => {
       if(e.key === "Enter"){
         sendBtn.click();
       }
     });
 
-    onChildAdded(ref(db, "messages/" + deviceID), (data) => {
+    onChildAdded(ref(db, "messages/" + deviceID), async (data) => {
       const msg = data.val();
       showMessage(msg);
       statusBox.innerHTML = '<div class="dot"></div>NEW INCOMING SIGNAL';
+      await unlockAudio();
+      await playReceiveSound();
     });
   </script>
 </body>
