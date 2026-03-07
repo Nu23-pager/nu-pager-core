@@ -356,3 +356,72 @@ onChildAdded(messagesRef, (data) => {
 
 </body>
 </html>
+if(!deviceID){
+  deviceID = "NP-" + Math.floor(Math.random()*9999).toString().padStart(4,"0");
+  localStorage.setItem("deviceID",deviceID);
+}
+
+deviceBox.textContent = deviceID;
+
+
+/* SEND MESSAGE */
+sendBtn.onclick = () => {
+
+  const text = input.value.trim();
+  if(!text) return;
+
+  push(messagesRef,{
+    device:deviceID,
+    text:text,
+    time:Date.now()
+  });
+
+  input.value="";
+}
+
+
+/* CLEAR SCREEN */
+clearBtn.onclick = () => {
+
+  screen.innerHTML = `
+  <div class="screen-header">
+  <span id="screenTarget">CHANNEL : OPEN</span>
+  </div>
+  `;
+
+}
+
+
+/* SOUND TOGGLE */
+
+soundBtn.onclick = () => {
+
+  soundEnabled = !soundEnabled;
+
+  if(soundEnabled){
+    soundBtn.textContent="SOUND ON";
+  }else{
+    soundBtn.textContent="SOUND OFF";
+  }
+
+}
+
+
+
+/* RECEIVE MESSAGE */
+
+onChildAdded(messagesRef,(snap)=>{
+
+  const data = snap.val();
+
+  const msg = document.createElement("div");
+  msg.className="message";
+  msg.textContent = data.device + " : " + data.text;
+
+  screen.appendChild(msg);
+
+  screen.scrollTop = screen.scrollHeight;
+
+  beep(900,120);
+
+});
