@@ -280,82 +280,6 @@ const deviceIdBox = document.getElementById("deviceId");
 let soundEnabled = true;
 let deviceID = localStorage.getItem("deviceID");
 
-function beep(freq = 880, duration = 80){
-  if(!soundEnabled) return;
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.type = "square";
-  osc.frequency.value = freq;
-  gain.gain.value = 0.03;
-
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start();
-
-  setTimeout(() => {
-    osc.stop();
-    ctx.close();
-  }, duration);
-}
-
-async function registerDevice(){
-  if(!deviceID){
-    const counterRef = ref(db, "deviceCounter");
-    const result = await runTransaction(counterRef, current => (current || 0) + 1);
-    const number = result.snapshot.val();
-    deviceID = "NP-" + String(number).padStart(4, "0");
-    localStorage.setItem("deviceID", deviceID);
-  }
-  deviceIdBox.textContent = deviceID;
-}
-
-function addMessageToScreen(msg){
-  const line = document.createElement("div");
-  line.className = "log-line";
-  line.innerHTML = `<span class="from">${msg.deviceID || "UNKNOWN"}</span>${msg.text}`;
-  screen.appendChild(line);
-  screen.scrollTop = screen.scrollHeight;
-}
-
-await registerDevice();
-
-sendBtn.onclick = () => {
-  const text = input.value.trim();
-  if(!text) return;
-
-  push(messagesRef, {
-    deviceID: deviceID,
-    text: text,
-    time: Date.now()
-  });
-
-  input.value = "";
-  beep(950, 70);
-};
-
-clearBtn.onclick = () => {
-  input.value = "";
-};
-
-soundBtn.onclick = () => {
-  soundEnabled = !soundEnabled;
-  soundBtn.textContent = soundEnabled ? "SOUND ON" : "SOUND OFF";
-  if(soundEnabled) beep(700, 60);
-};
-
-onChildAdded(messagesRef, (data) => {
-  const msg = data.val();
-  addMessageToScreen(msg);
-  if(msg.deviceID !== deviceID){
-    beep(620, 120);
-  }
-});
-</script>
-
-</body>
-</html>
 if(!deviceID){
   deviceID = "NP-" + Math.floor(Math.random()*9999).toString().padStart(4,"0");
   localStorage.setItem("deviceID",deviceID);
@@ -393,7 +317,6 @@ clearBtn.onclick = () => {
 
 
 /* SOUND TOGGLE */
-
 soundBtn.onclick = () => {
 
   soundEnabled = !soundEnabled;
@@ -407,9 +330,7 @@ soundBtn.onclick = () => {
 }
 
 
-
 /* RECEIVE MESSAGE */
-
 onChildAdded(messagesRef,(snap)=>{
 
   const data = snap.val();
