@@ -234,9 +234,9 @@ button{
   <input id="msg" class="inputbox" placeholder="ENTER MESSAGE...">
 
   <div class="controls">
-    <button id="clearBtn" class="clear">CLEAR</button>
-    <button id="send" class="send">SEND</button>
-    <button id="soundBtn" class="sound">SOUND ON</button>
+    <button id="clearBtn" class="clear" type="button">CLEAR</button>
+    <button id="sendBtn" class="send" type="button">SEND</button>
+    <button id="soundBtn" class="sound" type="button">SOUND ON</button>
   </div>
 
   <div class="status">
@@ -254,10 +254,10 @@ button{
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, get, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDHCoBm1A-0XNYIgX6TXAXA0vkb5P_hJs4",
+  apiKey: "AIzaSyDHCoBm1A-OXNYIgX6TXAXAovkb5P_hJs4",
   authDomain: "nu-pager-network.firebaseapp.com",
   databaseURL: "https://nu-pager-network-default-rtdb.firebaseio.com",
   projectId: "nu-pager-network",
@@ -271,78 +271,95 @@ const db = getDatabase(app);
 const messagesRef = ref(db, "messages");
 
 const input = document.getElementById("msg");
-const sendBtn = document.getElementById("send");
+const sendBtn = document.getElementById("sendBtn");
 const clearBtn = document.getElementById("clearBtn");
 const soundBtn = document.getElementById("soundBtn");
 const screen = document.getElementById("screen");
-const deviceIdBox = document.getElementById("deviceId");
+const deviceBox = document.getElementById("deviceId");
 
 let soundEnabled = true;
 let deviceID = localStorage.getItem("deviceID");
 
-if(!deviceID){
-  deviceID = "NP-" + Math.floor(Math.random()*9999).toString().padStart(4,"0");
-  localStorage.setItem("deviceID",deviceID);
+function beep(freq = 880, duration = 80){
+  if(!soundEnabled) return;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AudioCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = "square";
+  osc.frequency.value = freq;
+  gain.gain.value = 0.03;
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+
+  setTimeout(() => {
+    osc.stop();
+    ctx.close();
+  }, duration);
 }
 
-deviceBox.textContent = deviceID;
+async function registerDevice(){
+  if(!deviceID){
+    const counterRef = ref(db, "deviceCounter");
+    const result = await runTransaction(counterRef, current => (current || 0) + 1);
+    const number = result.snapshot.val();
+    deviceID = "NP-" + String(number).padStart(4, "0");
+    localStorage.setItem("deviceID", deviceID);
+  }
+  deviceBox.textContent = deviceID;
+}
 
+function addMessageToScreen(device, text){
+  const line = document.createElement("div");
+  line.className = "log-line";
+  line.innerHTML = '<span class="from">' + device + '</span>' + text;
+  screen.appendChild(line);
+  screen.scrollTop = screen.scrollHeight;
+}
 
-/* SEND MESSAGE */
-sendBtn.onclick = () => {
+await registerDevice();
 
+sendBtn.addEventListener("click", () => {
   const text = input.value.trim();
   if(!text) return;
 
-  push(messagesRef,{
-    device:deviceID,
-    text:text,
-    time:Date.now()
+  push(messagesRef, {
+    deviceID: deviceID,
+    text: text,
+    time: Date.now()
   });
 
-  input.value="";
-}
-
-
-/* CLEAR SCREEN */
-clearBtn.onclick = () => {
-
-  screen.innerHTML = `
-  <div class="screen-header">
-  <span id="screenTarget">CHANNEL : OPEN</span>
-  </div>
-  `;
-
-}
-
-
-/* SOUND TOGGLE */
-soundBtn.onclick = () => {
-
-  soundEnabled = !soundEnabled;
-
-  if(soundEnabled){
-    soundBtn.textContent="SOUND ON";
-  }else{
-    soundBtn.textContent="SOUND OFF";
-  }
-
-}
-
-
-/* RECEIVE MESSAGE */
-onChildAdded(messagesRef,(snap)=>{
-
-  const data = snap.val();
-
-  const msg = document.createElement("div");
-  msg.className="message";
-  msg.textContent = data.device + " : " + data.text;
-
-  screen.appendChild(msg);
-
-  screen.scrollTop = screen.scrollHeight;
-
-  beep(900,120);
-
+  input.value = "";
+  beep(950, 70);
 });
+
+clearBtn.addEventListener("click", () => {
+  input.value = "";
+  screen.innerHTML = `
+    <div class="screen-header">
+      <span id="screenTarget">CHANNEL : OPEN</span>
+      <span class="signal-bars">▂▃▄▅▆</span>
+    </div>
+  `;
+});
+
+soundBtn.addEventListener("click", () => {
+  soundEnabled = !soundEnabled;
+  soundBtn.textContent = soundEnabled ? "SOUND ON" : "SOUND OFF";
+  if(soundEnabled) beep(700, 60);
+});
+
+onChildAdded(messagesRef, (snapshot) => {
+  const msg = snapshot.val();
+  addMessageToScreen(msg.deviceID || "UNKNOWN", msg.text || "");
+  if(msg.deviceID !== deviceID){
+    beep(620, 120);
+  }
+});
+</script>
+
+</body>
+</html>
