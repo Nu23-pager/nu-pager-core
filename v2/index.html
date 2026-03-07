@@ -28,12 +28,14 @@ body{
 }
 
 .device{
-  width:340px;
+  width:min(340px, 92vw);
   background:#b8b1a4;
   border-radius:16px;
   padding:14px;
+  margin:20px;
   box-shadow:0 0 30px rgba(0,0,0,.6);
   border:3px solid #6d665b;
+}
 }
 
 .header{
@@ -205,8 +207,10 @@ button{
 
 .radar{
   margin-top:12px;
-  width:100%;
+  width:86%;
   aspect-ratio:1/1;
+  margin-left:auto;
+  margin-right:auto;
   background:
     radial-gradient(circle at center, rgba(0,255,100,.04) 0%, rgba(0,0,0,0) 60%),
     #000;
