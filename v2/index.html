@@ -2,10 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>NU-PAGER v2</title>
+<title>NU-PAGER v2.1</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+:root{
+  --direct:#60ff88;
+  --all:#ffd84a;
+  --screen-color:#60ff88;
+  --radar-glow:rgba(100,255,140,.30);
+  --radar-line:rgba(100,255,140,.95);
+  --radar-mid:rgba(90,255,140,.55);
+  --radar-fade:rgba(60,255,110,0);
+}
+
 body{
   margin:0;
   background:#0b0f14;
@@ -64,6 +74,7 @@ body{
   border:2px solid #2f3c2f;
   box-shadow:inset 0 0 12px rgba(0,255,120,.08);
   overflow:auto;
+  color:var(--screen-color);
 }
 
 .screen-header{
@@ -71,7 +82,7 @@ body{
   justify-content:space-between;
   align-items:center;
   margin-bottom:8px;
-  color:#75ff75;
+  color:var(--screen-color);
 }
 
 .signal-bars{
@@ -86,7 +97,7 @@ body{
 }
 
 .from{
-  color:#6fff6f;
+  color:var(--screen-color);
   font-size:12px;
   display:block;
   margin-bottom:2px;
@@ -156,6 +167,42 @@ button{
   display:inline-block;
 }
 
+.mode-row{
+  margin-top:6px;
+  display:flex;
+  justify-content:flex-end;
+}
+
+.mode-wrap{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  min-width:72px;
+}
+
+.mode-btn{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  border:2px solid rgba(0,0,0,.22);
+  background:var(--screen-color);
+  box-shadow:0 0 8px rgba(0,0,0,.25), inset 0 1px 4px rgba(255,255,255,.25);
+  padding:0;
+}
+
+.mode-label{
+  font-size:12px;
+  color:#222;
+  font-weight:bold;
+}
+
+.target-note{
+  color:#222;
+  margin-top:6px;
+  font-size:12px;
+}
+
 .radar{
   margin-top:12px;
   width:100%;
@@ -164,7 +211,7 @@ button{
     radial-gradient(circle at center, rgba(0,255,100,.04) 0%, rgba(0,0,0,0) 60%),
     #000;
   border-radius:50%;
-  border:4px solid #15d63f;
+  border:4px solid var(--screen-color);
   position:relative;
   overflow:hidden;
   box-shadow:inset 0 0 20px rgba(0,255,100,.08);
@@ -174,7 +221,7 @@ button{
 .radar::after{
   content:"";
   position:absolute;
-  background:rgba(40,255,90,.18);
+  background:color-mix(in srgb, var(--screen-color) 35%, transparent);
 }
 
 .radar::before{
@@ -195,7 +242,7 @@ button{
 
 .radar-ring{
   position:absolute;
-  border:1px solid rgba(60,255,100,.25);
+  border:1px solid color-mix(in srgb, var(--screen-color) 30%, transparent);
   border-radius:50%;
   left:50%;
   top:50%;
@@ -212,7 +259,7 @@ button{
   left:50%;
   top:50%;
   transform:translate(-50%,-50%);
-  color:#60ff88;
+  color:var(--screen-color);
   font-size:10px;
   z-index:3;
   text-align:center;
@@ -238,13 +285,13 @@ button{
   width:100%;
   height:4px;
   background:linear-gradient(90deg,
-    rgba(120,255,160,.95) 0%,
-    rgba(90,255,140,.55) 35%,
-    rgba(60,255,110,.18) 70%,
-    rgba(60,255,110,0) 100%);
+    var(--radar-line) 0%,
+    var(--radar-mid) 35%,
+    rgba(255,255,255,.08) 58%,
+    var(--radar-fade) 100%);
   box-shadow:
-    0 0 6px rgba(100,255,140,.65),
-    0 0 14px rgba(100,255,140,.30);
+    0 0 6px var(--radar-glow),
+    0 0 14px rgba(255,255,255,.08);
   border-radius:3px;
 }
 
@@ -267,10 +314,15 @@ button{
 }
 
 .radar-dot.selected{
-  background:#31ff61;
+  background:var(--screen-color);
   box-shadow:
-    0 0 6px rgba(60,255,110,.9),
-    0 0 14px rgba(60,255,110,.4);
+    0 0 6px color-mix(in srgb, var(--screen-color) 90%, white 10%),
+    0 0 14px color-mix(in srgb, var(--screen-color) 50%, transparent);
+}
+
+.radar-dot.self{
+  background:#a0ffd0;
+  border-color:#fff;
 }
 
 .radar-dot-label{
@@ -279,7 +331,7 @@ button{
   left:50%;
   transform:translateX(-50%);
   font-size:9px;
-  color:#8cff8c;
+  color:var(--screen-color);
   white-space:nowrap;
   pointer-events:none;
 }
@@ -290,17 +342,11 @@ button{
   left:50%;
   transform:translateX(-50%);
   z-index:3;
-  color:#2dff67;
+  color:var(--screen-color);
   font-size:12px;
   letter-spacing:1px;
-  opacity:.8;
+  opacity:.85;
   pointer-events:none;
-}
-
-.target-note{
-  color:#222;
-  margin-top:6px;
-  font-size:12px;
 }
 
 @media (max-width:400px){
@@ -337,6 +383,13 @@ button{
 
   <div class="status">
     ONLINE <span class="online"></span>
+  </div>
+
+  <div class="mode-row">
+    <div class="mode-wrap">
+      <button id="modeBtn" class="mode-btn" title="MODE"></button>
+      <div class="mode-label" id="modeLabel">DIRECT</div>
+    </div>
   </div>
 
   <div class="target-note" id="targetNote">TARGET LOCK : NONE</div>
@@ -377,17 +430,21 @@ const input = document.getElementById("msg");
 const sendBtn = document.getElementById("sendBtn");
 const clearBtn = document.getElementById("clearBtn");
 const soundBtn = document.getElementById("soundBtn");
+const modeBtn = document.getElementById("modeBtn");
+const modeLabel = document.getElementById("modeLabel");
 const screen = document.getElementById("screen");
 const deviceBox = document.getElementById("deviceId");
 const screenTarget = document.getElementById("screenTarget");
 const targetNote = document.getElementById("targetNote");
 const radar = document.getElementById("radar");
+const radarCenter = document.getElementById("radarCenter");
 
 let soundEnabled = true;
 let audioCtx = null;
 let deviceID = localStorage.getItem("deviceID");
 let selectedTarget = null;
 let devicesMap = {};
+let mode = "DIRECT";
 
 function unlockAudio(){
   if(!audioCtx){
@@ -433,6 +490,30 @@ function receiveBeep(){
   beep(620, 120, 0.035);
 }
 
+function applyModeUI(){
+  const root = document.documentElement;
+
+  if(mode === "ALL"){
+    root.style.setProperty("--screen-color", "#ffd84a");
+    root.style.setProperty("--radar-glow", "rgba(255,216,74,.35)");
+    root.style.setProperty("--radar-line", "rgba(255,216,74,.95)");
+    root.style.setProperty("--radar-mid", "rgba(255,216,74,.55)");
+    root.style.setProperty("--radar-fade", "rgba(255,216,74,0)");
+    modeLabel.textContent = "ALL";
+    screenTarget.textContent = "CHANNEL : ALL";
+    targetNote.textContent = "TARGET LOCK : BROADCAST";
+  } else {
+    root.style.setProperty("--screen-color", "#60ff88");
+    root.style.setProperty("--radar-glow", "rgba(100,255,140,.30)");
+    root.style.setProperty("--radar-line", "rgba(100,255,140,.95)");
+    root.style.setProperty("--radar-mid", "rgba(90,255,140,.55)");
+    root.style.setProperty("--radar-fade", "rgba(60,255,110,0)");
+    modeLabel.textContent = "DIRECT";
+    screenTarget.textContent = selectedTarget ? ("CHANNEL : " + selectedTarget) : "CHANNEL : SELECT TARGET";
+    targetNote.textContent = selectedTarget ? ("TARGET LOCK : " + selectedTarget) : "TARGET LOCK : NONE";
+  }
+}
+
 async function registerDevice(){
   if(!deviceID){
     const counterRef = ref(db, "deviceCounter");
@@ -442,7 +523,7 @@ async function registerDevice(){
     localStorage.setItem("deviceID", deviceID);
   }
   deviceBox.textContent = deviceID;
-  document.getElementById("radarCenter").textContent = deviceID;
+  radarCenter.textContent = deviceID;
 }
 
 async function registerPresence(){
@@ -451,8 +532,8 @@ async function registerPresence(){
   const old = existing.val() || {};
   await set(myDeviceRef, {
     id: deviceID,
-    x: old.x ?? (20 + Math.floor(Math.random() * 60)),
-    y: old.y ?? (20 + Math.floor(Math.random() * 60)),
+    x: old.x ?? 50,
+    y: old.y ?? 50,
     updatedAt: Date.now()
   });
 }
@@ -467,8 +548,10 @@ function addMessageToScreen(from, text){
 
 function setTarget(target){
   selectedTarget = target;
-  screenTarget.textContent = "CHANNEL : " + target;
-  targetNote.textContent = "TARGET LOCK : " + target;
+  if(mode === "DIRECT"){
+    screenTarget.textContent = "CHANNEL : " + target;
+    targetNote.textContent = "TARGET LOCK : " + target;
+  }
 
   document.querySelectorAll(".radar-dot").forEach(dot => {
     if(dot.dataset.id === target){
@@ -485,7 +568,7 @@ function renderRadar(devices){
   document.querySelectorAll(".radar-dot").forEach(el => el.remove());
 
   Object.values(devices).forEach(dev => {
-    if(!dev || !dev.id || dev.id === deviceID) return;
+    if(!dev || !dev.id) return;
 
     const dot = document.createElement("div");
     dot.className = "radar-dot";
@@ -493,19 +576,25 @@ function renderRadar(devices){
     dot.style.left = (dev.x || 50) + "%";
     dot.style.top = (dev.y || 50) + "%";
 
+    if(dev.id === deviceID){
+      dot.classList.add("self");
+    }
+
+    if(selectedTarget === dev.id){
+      dot.classList.add("selected");
+    }
+
     const label = document.createElement("div");
     label.className = "radar-dot-label";
     label.textContent = dev.id;
 
     dot.appendChild(label);
 
-    if(selectedTarget === dev.id){
-      dot.classList.add("selected");
+    if(dev.id !== deviceID){
+      dot.addEventListener("click", () => {
+        setTarget(dev.id);
+      });
     }
-
-    dot.addEventListener("click", () => {
-      setTarget(dev.id);
-    });
 
     radar.appendChild(dot);
   });
@@ -513,12 +602,13 @@ function renderRadar(devices){
 
 await registerDevice();
 await registerPresence();
+applyModeUI();
 
 clearBtn.addEventListener("click", () => {
   input.value = "";
   screen.innerHTML = `
     <div class="screen-header">
-      <span id="screenTarget">CHANNEL : ${selectedTarget || "SELECT TARGET"}</span>
+      <span id="screenTarget">${mode === "ALL" ? "CHANNEL : ALL" : (selectedTarget ? "CHANNEL : " + selectedTarget : "CHANNEL : SELECT TARGET")}</span>
       <span class="signal-bars">▂▃▄▅▆</span>
     </div>
   `;
@@ -531,31 +621,63 @@ soundBtn.addEventListener("click", () => {
   if(soundEnabled) beep(700, 120, 0.025);
 });
 
+modeBtn.addEventListener("click", () => {
+  unlockAudio();
+  mode = mode === "DIRECT" ? "ALL" : "DIRECT";
+  applyModeUI();
+  radarBeep();
+});
+
 sendBtn.addEventListener("click", () => {
   unlockAudio();
 
   const text = input.value.trim();
   if(!text) return;
 
-  if(!selectedTarget){
+  if(mode === "DIRECT" && !selectedTarget){
     alert("LOCK TARGET ON RADAR FIRST");
     return;
   }
 
+  const target = mode === "ALL" ? "ALL" : selectedTarget;
+
   push(messagesRef, {
     from: deviceID,
-    to: selectedTarget,
+    to: target,
+    mode: mode,
     text: text,
     time: Date.now()
   });
 
-  addMessageToScreen("TO " + selectedTarget, text);
+  addMessageToScreen("TO " + target, text);
   input.value = "";
   sendBeep();
 });
 
 onValue(devicesRef, (snapshot) => {
-  devicesMap = snapshot.val() || {};
+  const raw = snapshot.val() || {};
+  const ids = Object.keys(raw).sort();
+  const total = Math.max(ids.length, 1);
+
+  devicesMap = {};
+  ids.forEach((id, index) => {
+    if(id === deviceID){
+      devicesMap[id] = { id, x:50, y:50 };
+      return;
+    }
+
+    const angle = (index / total) * Math.PI * 2;
+    const radius = 28 + (index % 2) * 10;
+    const x = 50 + Math.cos(angle) * radius;
+    const y = 50 + Math.sin(angle) * radius;
+
+    devicesMap[id] = { id, x, y };
+  });
+
+  if(!devicesMap[deviceID]){
+    devicesMap[deviceID] = { id:deviceID, x:50, y:50 };
+  }
+
   renderRadar(devicesMap);
 });
 
@@ -563,9 +685,12 @@ onChildAdded(messagesRef, (snapshot) => {
   const msg = snapshot.val();
   if(!msg) return;
 
-  if(msg.to === deviceID){
+  if(msg.to === "ALL" || msg.to === deviceID){
+    if(msg.from === deviceID && msg.to !== "ALL") return;
     addMessageToScreen(msg.from || "UNKNOWN", msg.text || "");
-    receiveBeep();
+    if(msg.from !== deviceID){
+      receiveBeep();
+    }
   }
 });
 </script>
