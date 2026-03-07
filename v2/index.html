@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>NU-PAGER v2.1</title>
+<title>NU-PAGER v2.2</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -16,15 +16,21 @@
   --radar-fade:rgba(60,255,110,0);
 }
 
+*{
+  box-sizing:border-box;
+}
+
 body{
   margin:0;
   background:#0b0f14;
   display:flex;
   justify-content:center;
-  align-items:center;
+  align-items:flex-start;
   min-height:100vh;
   font-family:monospace;
   color:#9cff9c;
+  padding-top:max(14px, env(safe-area-inset-top));
+  padding-bottom:max(14px, env(safe-area-inset-bottom));
 }
 
 .device{
@@ -32,10 +38,9 @@ body{
   background:#b8b1a4;
   border-radius:16px;
   padding:14px;
-  margin:20px;
+  margin:14px;
   box-shadow:0 0 30px rgba(0,0,0,.6);
   border:3px solid #6d665b;
-}
 }
 
 .header{
@@ -44,7 +49,7 @@ body{
   align-items:flex-start;
   color:#222;
   font-weight:bold;
-  margin-bottom:10px;
+  margin-bottom:8px;
 }
 
 .header-left{
@@ -72,7 +77,7 @@ body{
   background:#041008;
   border-radius:8px;
   padding:10px;
-  height:145px;
+  height:125px;
   border:2px solid #2f3c2f;
   box-shadow:inset 0 0 12px rgba(0,255,120,.08);
   overflow:auto;
@@ -93,7 +98,7 @@ body{
 
 .log-line{
   margin-bottom:8px;
-  line-height:1.25;
+  line-height:1.2;
   white-space:pre-wrap;
   word-break:break-word;
 }
@@ -108,7 +113,6 @@ body{
 .inputbox{
   margin-top:8px;
   width:100%;
-  box-sizing:border-box;
   background:#1a1f1c;
   border:none;
   padding:10px;
@@ -119,7 +123,7 @@ body{
 }
 
 .controls{
-  margin-top:8px;
+  margin-top:6px;
   display:flex;
   gap:8px;
 }
@@ -153,7 +157,7 @@ button{
 }
 
 .status{
-  margin-top:8px;
+  margin-top:6px;
   color:#222;
   font-size:12px;
   display:flex;
@@ -201,13 +205,13 @@ button{
 
 .target-note{
   color:#222;
-  margin-top:6px;
+  margin-top:4px;
   font-size:12px;
 }
 
 .radar{
-  margin-top:12px;
-  width:86%;
+  margin-top:10px;
+  width:80%;
   aspect-ratio:1/1;
   margin-left:auto;
   margin-right:auto;
@@ -218,7 +222,7 @@ button{
   border:4px solid var(--screen-color);
   position:relative;
   overflow:hidden;
-  box-shadow:inset 0 0 20px rgba(0,255,100,.08);
+  box-shadow:inset 0 0 18px rgba(0,255,100,.08);
 }
 
 .radar::before,
@@ -438,7 +442,6 @@ const modeBtn = document.getElementById("modeBtn");
 const modeLabel = document.getElementById("modeLabel");
 const screen = document.getElementById("screen");
 const deviceBox = document.getElementById("deviceId");
-const screenTarget = document.getElementById("screenTarget");
 const targetNote = document.getElementById("targetNote");
 const radar = document.getElementById("radar");
 const radarCenter = document.getElementById("radarCenter");
@@ -447,7 +450,6 @@ let soundEnabled = true;
 let audioCtx = null;
 let deviceID = localStorage.getItem("deviceID");
 let selectedTarget = null;
-let devicesMap = {};
 let mode = "DIRECT";
 
 function unlockAudio(){
@@ -482,16 +484,14 @@ function beep(freq=880, duration=80, volume=0.03){
   osc.stop(audioCtx.currentTime + duration/1000);
 }
 
-function radarBeep(){
-  beep(700, 45, 0.012);
-}
+function radarBeep(){ beep(700,45,0.012); }
+function sendBeep(){ beep(950,80,0.03); }
+function receiveBeep(){ beep(620,120,0.035); }
 
-function sendBeep(){
-  beep(950, 80, 0.03);
-}
-
-function receiveBeep(){
-  beep(620, 120, 0.035);
+function currentChannelLabel(){
+  if(mode === "ALL") return "CHANNEL : ALL";
+  if(selectedTarget) return "CHANNEL : " + selectedTarget;
+  return "CHANNEL : SELECT TARGET";
 }
 
 function applyModeUI(){
@@ -504,7 +504,6 @@ function applyModeUI(){
     root.style.setProperty("--radar-mid", "rgba(255,216,74,.55)");
     root.style.setProperty("--radar-fade", "rgba(255,216,74,0)");
     modeLabel.textContent = "ALL";
-    screenTarget.textContent = "CHANNEL : ALL";
     targetNote.textContent = "TARGET LOCK : BROADCAST";
   } else {
     root.style.setProperty("--screen-color", "#60ff88");
@@ -513,8 +512,12 @@ function applyModeUI(){
     root.style.setProperty("--radar-mid", "rgba(90,255,140,.55)");
     root.style.setProperty("--radar-fade", "rgba(60,255,110,0)");
     modeLabel.textContent = "DIRECT";
-    screenTarget.textContent = selectedTarget ? ("CHANNEL : " + selectedTarget) : "CHANNEL : SELECT TARGET";
     targetNote.textContent = selectedTarget ? ("TARGET LOCK : " + selectedTarget) : "TARGET LOCK : NONE";
+  }
+
+  const header = document.getElementById("screenTarget");
+  if(header){
+    header.textContent = currentChannelLabel();
   }
 }
 
@@ -553,8 +556,9 @@ function addMessageToScreen(from, text){
 function setTarget(target){
   selectedTarget = target;
   if(mode === "DIRECT"){
-    screenTarget.textContent = "CHANNEL : " + target;
     targetNote.textContent = "TARGET LOCK : " + target;
+    const header = document.getElementById("screenTarget");
+    if(header) header.textContent = "CHANNEL : " + target;
   }
 
   document.querySelectorAll(".radar-dot").forEach(dot => {
@@ -612,17 +616,18 @@ clearBtn.addEventListener("click", () => {
   input.value = "";
   screen.innerHTML = `
     <div class="screen-header">
-      <span id="screenTarget">${mode === "ALL" ? "CHANNEL : ALL" : (selectedTarget ? "CHANNEL : " + selectedTarget : "CHANNEL : SELECT TARGET")}</span>
+      <span id="screenTarget">${currentChannelLabel()}</span>
       <span class="signal-bars">▂▃▄▅▆</span>
     </div>
   `;
+  applyModeUI();
 });
 
 soundBtn.addEventListener("click", () => {
   unlockAudio();
   soundEnabled = !soundEnabled;
   soundBtn.textContent = soundEnabled ? "SOUND ON" : "SOUND OFF";
-  if(soundEnabled) beep(700, 120, 0.025);
+  if(soundEnabled) beep(700,120,0.025);
 });
 
 modeBtn.addEventListener("click", () => {
@@ -661,28 +666,21 @@ sendBtn.addEventListener("click", () => {
 onValue(devicesRef, (snapshot) => {
   const raw = snapshot.val() || {};
   const ids = Object.keys(raw).sort();
-  const total = Math.max(ids.length, 1);
+  const others = ids.filter(id => id !== deviceID);
 
-  devicesMap = {};
-  ids.forEach((id, index) => {
-    if(id === deviceID){
-      devicesMap[id] = { id, x:50, y:50 };
-      return;
-    }
+  const arranged = {};
+  arranged[deviceID] = { id:deviceID, x:50, y:50 };
 
+  const total = Math.max(others.length, 1);
+  others.forEach((id, index) => {
     const angle = (index / total) * Math.PI * 2;
-    const radius = 28 + (index % 2) * 10;
+    const radius = 34;
     const x = 50 + Math.cos(angle) * radius;
     const y = 50 + Math.sin(angle) * radius;
-
-    devicesMap[id] = { id, x, y };
+    arranged[id] = { id, x, y };
   });
 
-  if(!devicesMap[deviceID]){
-    devicesMap[deviceID] = { id:deviceID, x:50, y:50 };
-  }
-
-  renderRadar(devicesMap);
+  renderRadar(arranged);
 });
 
 onChildAdded(messagesRef, (snapshot) => {
