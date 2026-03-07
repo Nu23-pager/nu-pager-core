@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NuPager Core V2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+body{
+background:#0d0f11;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+font-family:monospace;
+color:#9cff9c;
+}
+
+.device{
+width:340px;
+background:#b8b1a4;
+border-radius:14px;
+padding:14px;
+box-shadow:0 0 30px rgba(0,0,0,0.6);
+border:3px solid #6d665b;
+}
+
+.header{
+font-weight:bold;
+color:#222;
+margin-bottom:8px;
+display:flex;
+justify-content:space-between;
+font-size:14px;
+}
+
+.screen{
+background:#08110a;
+border-radius:6px;
+padding:10px;
+height:110px;
+border:2px solid #2f3c2f;
+}
+
+.screen small{
+color:#6fff6f;
+}
+
+.message{
+margin-top:4px;
+}
+
+.inputbox{
+margin-top:6px;
+width:100%;
+background:#1c1f1d;
+border:none;
+padding:8px;
+color:#aaffaa;
+border-radius:4px;
+}
+
+.controls{
+margin-top:8px;
+display:flex;
+gap:6px;
+}
+
+button{
+flex:1;
+padding:8px;
+border:none;
+border-radius:4px;
+font-weight:bold;
+}
+
+.send{
+background:#bfa06a;
+}
+
+.sound{
+background:#778c90;
+}
+
+.clear{
+background:#c33;
+color:white;
+}
+
+.online{
+background:#1f4;
+height:12px;
+width:12px;
+border-radius:50%;
+display:inline-block;
+margin-left:6px;
+}
+
+.radar{
+margin-top:10px;
+height:150px;
+background:black;
+border-radius:100%;
+border:3px solid #1c3;
+display:flex;
+align-items:center;
+justify-content:center;
+color:#3f3;
+font-size:12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="device">
+
+<div class="header">
+<div>NU-PAGER</div>
+<div>NP-0007</div>
+</div>
+
+<div class="screen">
+<small>TO : Wife</small>
+
+<div class="message">ถึงบ้านแล้ว</div>
+<div class="message">กำลังทำกับข้าวอยู่</div>
+<div class="message">โอเค</div>
+
+</div>
+
+<input class="inputbox" placeholder="ENTER MESSAGE...">
+
+<div class="controls">
+
+<button class="clear">CLEAR</button>
+<button class="send">SEND</button>
+<button class="sound">SOUND</button>
+
+</div>
+
+<div style="margin-top:4px;color:#222;font-size:12px;">
+ONLINE <span class="online"></span>
+</div>
+
+<div class="radar">
+RADAR CONTACT
+</div>
+
+</div>
+
+</body>
+</html>
