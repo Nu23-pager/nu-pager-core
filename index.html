@@ -40,6 +40,9 @@
       --msg-green:#7fb36f;
 
       --plate-text:#2c2922;
+
+      --sound-top:#b9c7c0;
+      --sound-bot:#7d8f87;
     }
 
     *{
@@ -531,8 +534,8 @@
 
     .actions{
       display:grid;
-      grid-template-columns: 160px 1fr;
-      gap:10px;
+      grid-template-columns: 1fr 120px;
+      gap:8px;
       align-items:end;
     }
 
@@ -553,12 +556,10 @@
       cursor:not-allowed;
     }
 
-    .hint{
-      align-self:center;
-      font-size:10px;
-      color:#736a57;
-      text-transform:uppercase;
-      line-height:1.25;
+    #soundBtn{
+      background:linear-gradient(180deg, var(--sound-top), var(--sound-bot));
+      color:#18211d;
+      border:1px solid #66786f;
     }
 
     @media (max-width: 640px){
@@ -667,12 +668,8 @@
       }
 
       .actions{
-        grid-template-columns:1fr;
+        grid-template-columns: 1fr 110px;
         gap:6px;
-      }
-
-      .hint{
-        display:none;
       }
 
       .btn{
@@ -740,7 +737,7 @@
 
         <div class="actions">
           <button class="btn" id="send" disabled>TRANSMIT</button>
-          <div class="hint">Direct device message · private channel</div>
+          <button class="btn" id="soundBtn" type="button">SOUND ON</button>
         </div>
       </div>
     </div>
@@ -773,88 +770,105 @@
     const msgInput = document.getElementById("msg");
     const sendBtn = document.getElementById("send");
     const clearBtn = document.getElementById("clearBtn");
+    const soundBtn = document.getElementById("soundBtn");
     const screen = document.getElementById("screen");
     const deviceBox = document.getElementById("device");
     const statusBox = document.getElementById("status");
     const emptyState = document.getElementById("emptyState");
 
     let deviceID = localStorage.getItem("deviceID") || "";
-    let audioUnlocked = false;
+
+    let audioCtx = null;
+    let masterGain = null;
+    let audioReady = false;
     let bootPlayed = false;
 
     function sleep(ms){
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    async function initAudio(){
+      try{
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if(!AudioContextClass) {
+          if(soundBtn) soundBtn.innerText = "NO AUDIO";
+          return false;
+        }
+
+        if(!audioCtx){
+          audioCtx = new AudioContextClass();
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.18;
+          masterGain.connect(audioCtx.destination);
+        }
+
+        if(audioCtx.state === "suspended"){
+          await audioCtx.resume();
+        }
+
+        audioReady = true;
+
+        if(soundBtn){
+          soundBtn.innerText = "SOUND OK";
+        }
+
+        if(!bootPlayed){
+          bootPlayed = true;
+          await playBootSound();
+        }
+
+        return true;
+      }catch(e){
+        console.log("audio init failed", e);
+        if(soundBtn) soundBtn.innerText = "NO AUDIO";
+        return false;
+      }
+    }
+
     async function beep({
       frequency = 880,
       duration = 0.08,
       type = "square",
-      volume = 0.03
+      volume = 0.18
     } = {}){
-      try{
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if(!AudioContextClass) return;
+      if(!audioReady || !audioCtx || !masterGain) return;
 
-        const ctx = new AudioContextClass();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
 
-        if(ctx.state === "suspended"){
-          await ctx.resume();
-        }
+      osc.type = type;
+      osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
 
-        const oscillator = ctx.createOscillator();
-        const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(volume, audioCtx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
 
-        oscillator.type = type;
-        oscillator.frequency.value = frequency;
-        gain.gain.value = volume;
+      osc.connect(gain);
+      gain.connect(masterGain);
 
-        oscillator.connect(gain);
-        gain.connect(ctx.destination);
-
-        oscillator.start();
-
-        gain.gain.setValueAtTime(volume, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-
-        oscillator.stop(ctx.currentTime + duration);
-
-        setTimeout(() => {
-          try { ctx.close(); } catch(e) {}
-        }, Math.max(150, duration * 1000 + 60));
-      }catch(e){
-        console.log("beep blocked", e);
-      }
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + duration + 0.02);
     }
 
     async function playBootSound(){
-      if(bootPlayed) return;
-      bootPlayed = true;
-      await beep({ frequency: 740, duration: 0.07, volume: 0.025 });
+      await beep({ frequency: 620, duration: 0.06, type: "triangle", volume: 0.20 });
+      await sleep(70);
+      await beep({ frequency: 880, duration: 0.07, type: "triangle", volume: 0.18 });
     }
 
     async function playSendSound(){
-      await beep({ frequency: 980, duration: 0.07, volume: 0.03 });
+      await beep({ frequency: 980, duration: 0.06, type: "square", volume: 0.20 });
     }
 
     async function playReceiveSound(){
-      await beep({ frequency: 720, duration: 0.055, volume: 0.028 });
-      await sleep(85);
-      await beep({ frequency: 920, duration: 0.055, volume: 0.028 });
+      await beep({ frequency: 720, duration: 0.05, type: "square", volume: 0.18 });
+      await sleep(80);
+      await beep({ frequency: 920, duration: 0.05, type: "square", volume: 0.18 });
     }
 
     async function playClearSound(){
-      await beep({ frequency: 520, duration: 0.06, volume: 0.028 });
+      await beep({ frequency: 520, duration: 0.06, type: "sawtooth", volume: 0.18 });
     }
-
-    async function unlockAudio(){
-      if(audioUnlocked) return;
-      audioUnlocked = true;
-      await playBootSound();
-    }
-
-    document.addEventListener("pointerdown", unlockAudio, { once: true });
-    document.addEventListener("touchstart", unlockAudio, { once: true });
 
     async function registerDevice(){
       if(!deviceID){
@@ -914,8 +928,14 @@
     await registerDevice();
     showEmptyIfNeeded();
 
+    if(soundBtn){
+      soundBtn.onclick = async () => {
+        await initAudio();
+      };
+    }
+
     sendBtn.onclick = async () => {
-      await unlockAudio();
+      await initAudio();
 
       const to = toInput.value.trim().toUpperCase();
       const text = msgInput.value.trim();
@@ -957,7 +977,7 @@
     };
 
     clearBtn.onclick = async () => {
-      await unlockAudio();
+      await initAudio();
       clearMessages();
       await playClearSound();
     };
@@ -972,7 +992,6 @@
       const msg = data.val();
       showMessage(msg);
       statusBox.innerHTML = '<div class="dot"></div>NEW INCOMING SIGNAL';
-      await unlockAudio();
       await playReceiveSound();
     });
   </script>
