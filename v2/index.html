@@ -6,150 +6,353 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-
 body{
-background:#0d0f11;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-font-family:monospace;
-color:#9cff9c;
+  margin:0;
+  background:#0b0f14;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  font-family:monospace;
+  color:#9cff9c;
 }
 
 .device{
-width:340px;
-background:#b8b1a4;
-border-radius:14px;
-padding:14px;
-box-shadow:0 0 30px rgba(0,0,0,0.6);
-border:3px solid #6d665b;
+  width:340px;
+  background:#b8b1a4;
+  border-radius:16px;
+  padding:14px;
+  box-shadow:0 0 30px rgba(0,0,0,.6);
+  border:3px solid #6d665b;
 }
 
 .header{
-font-weight:bold;
-color:#222;
-margin-bottom:8px;
-display:flex;
-justify-content:space-between;
-font-size:14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  color:#222;
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+.header-left{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.title{
+  font-size:18px;
+  font-weight:900;
+}
+
+.sub{
+  font-size:11px;
+  opacity:.8;
+}
+
+.device-id{
+  font-size:18px;
+  font-weight:900;
 }
 
 .screen{
-background:#08110a;
-border-radius:6px;
-padding:10px;
-height:110px;
-border:2px solid #2f3c2f;
+  background:#041008;
+  border-radius:8px;
+  padding:10px;
+  height:145px;
+  border:2px solid #2f3c2f;
+  box-shadow:inset 0 0 12px rgba(0,255,120,.08);
+  overflow:auto;
 }
 
-.screen small{
-color:#6fff6f;
+.screen-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:8px;
+  color:#75ff75;
 }
 
-.message{
-margin-top:4px;
+.signal-bars{
+  letter-spacing:1px;
+}
+
+.log-line{
+  margin-bottom:8px;
+  line-height:1.25;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+
+.from{
+  color:#6fff6f;
+  font-size:12px;
+  display:block;
+  margin-bottom:2px;
 }
 
 .inputbox{
-margin-top:6px;
-width:100%;
-background:#1c1f1d;
-border:none;
-padding:8px;
-color:#aaffaa;
-border-radius:4px;
+  margin-top:8px;
+  width:100%;
+  box-sizing:border-box;
+  background:#1a1f1c;
+  border:none;
+  padding:10px;
+  color:#aaffaa;
+  border-radius:6px;
+  font-family:monospace;
+  font-size:16px;
 }
 
 .controls{
-margin-top:8px;
-display:flex;
-gap:6px;
+  margin-top:8px;
+  display:flex;
+  gap:8px;
 }
 
 button{
-flex:1;
-padding:8px;
-border:none;
-border-radius:4px;
-font-weight:bold;
-}
-
-.send{
-background:#bfa06a;
-}
-
-.sound{
-background:#778c90;
+  border:none;
+  border-radius:6px;
+  font-weight:bold;
+  font-family:monospace;
 }
 
 .clear{
-background:#c33;
-color:white;
+  flex:1;
+  padding:12px 8px;
+  background:#c33;
+  color:#fff;
+}
+
+.send{
+  flex:1;
+  padding:12px 8px;
+  background:#bfa06a;
+  color:#111;
+}
+
+.sound{
+  flex:1;
+  padding:12px 8px;
+  background:#8ea3a8;
+  color:#111;
+}
+
+.status{
+  margin-top:8px;
+  color:#222;
+  font-size:12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
 }
 
 .online{
-background:#1f4;
-height:12px;
-width:12px;
-border-radius:50%;
-display:inline-block;
-margin-left:6px;
+  background:#1f4;
+  height:12px;
+  width:12px;
+  border-radius:50%;
+  display:inline-block;
 }
 
 .radar{
-margin-top:10px;
-height:150px;
-background:black;
-border-radius:100%;
-border:3px solid #1c3;
-display:flex;
-align-items:center;
-justify-content:center;
-color:#3f3;
-font-size:12px;
+  margin-top:12px;
+  height:170px;
+  background:#000;
+  border-radius:50%;
+  border:4px solid #15d63f;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#23ff5c;
+  font-size:14px;
+  position:relative;
+  overflow:hidden;
 }
 
+.radar::before,
+.radar::after{
+  content:"";
+  position:absolute;
+  background:rgba(40,255,90,.18);
+}
+
+.radar::before{
+  width:2px;
+  height:100%;
+  left:50%;
+  transform:translateX(-50%);
+}
+
+.radar::after{
+  height:2px;
+  width:100%;
+  top:50%;
+  transform:translateY(-50%);
+}
+
+.radar-ring{
+  position:absolute;
+  border:1px solid rgba(60,255,100,.25);
+  border-radius:50%;
+}
+
+.r1{ width:40px; height:40px; }
+.r2{ width:80px; height:80px; }
+.r3{ width:120px; height:120px; }
+.r4{ width:160px; height:160px; }
+
+.radar-label{
+  position:relative;
+  z-index:2;
+}
+
+@media (max-width:400px){
+  .device{ width:92vw; }
+}
 </style>
 </head>
-
 <body>
 
 <div class="device">
+  <div class="header">
+    <div class="header-left">
+      <div class="title">NU-PAGER</div>
+      <div class="sub">REBEL SIGNAL DEVICE</div>
+    </div>
+    <div class="device-id" id="deviceId">NP-0007</div>
+  </div>
 
-<div class="header">
-<div>NU-PAGER</div>
-<div>NP-0007</div>
+  <div class="screen" id="screen">
+    <div class="screen-header">
+      <span id="screenTarget">CHANNEL : OPEN</span>
+      <span class="signal-bars">▂▃▄▅▆</span>
+    </div>
+  </div>
+
+  <input id="msg" class="inputbox" placeholder="ENTER MESSAGE...">
+
+  <div class="controls">
+    <button id="clearBtn" class="clear">CLEAR</button>
+    <button id="send" class="send">SEND</button>
+    <button id="soundBtn" class="sound">SOUND ON</button>
+  </div>
+
+  <div class="status">
+    ONLINE <span class="online"></span>
+  </div>
+
+  <div class="radar">
+    <div class="radar-ring r1"></div>
+    <div class="radar-ring r2"></div>
+    <div class="radar-ring r3"></div>
+    <div class="radar-ring r4"></div>
+    <div class="radar-label">RADAR CONTACT</div>
+  </div>
 </div>
 
-<div class="screen">
-<small>TO : Wife</small>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, onChildAdded, get, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-<div class="message">ถึงบ้านแล้ว</div>
-<div class="message">กำลังทำกับข้าวอยู่</div>
-<div class="message">โอเค</div>
+const firebaseConfig = {
+  apiKey: "AIzaSyDHCoBm1A-0XNYIgX6TXAXA0vkb5P_hJs4",
+  authDomain: "nu-pager-network.firebaseapp.com",
+  databaseURL: "https://nu-pager-network-default-rtdb.firebaseio.com",
+  projectId: "nu-pager-network",
+  storageBucket: "nu-pager-network.firebasestorage.app",
+  messagingSenderId: "1037097080836",
+  appId: "1:1037097080836:web:cf63b5d9125ef13c6cfd51"
+};
 
-</div>
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const messagesRef = ref(db, "messages");
 
-<input class="inputbox" placeholder="ENTER MESSAGE...">
+const input = document.getElementById("msg");
+const sendBtn = document.getElementById("send");
+const clearBtn = document.getElementById("clearBtn");
+const soundBtn = document.getElementById("soundBtn");
+const screen = document.getElementById("screen");
+const deviceIdBox = document.getElementById("deviceId");
 
-<div class="controls">
+let soundEnabled = true;
+let deviceID = localStorage.getItem("deviceID");
 
-<button class="clear">CLEAR</button>
-<button class="send">SEND</button>
-<button class="sound">SOUND</button>
+function beep(freq = 880, duration = 80){
+  if(!soundEnabled) return;
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
 
-</div>
+  osc.type = "square";
+  osc.frequency.value = freq;
+  gain.gain.value = 0.03;
 
-<div style="margin-top:4px;color:#222;font-size:12px;">
-ONLINE <span class="online"></span>
-</div>
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
 
-<div class="radar">
-RADAR CONTACT
-</div>
+  setTimeout(() => {
+    osc.stop();
+    ctx.close();
+  }, duration);
+}
 
-</div>
+async function registerDevice(){
+  if(!deviceID){
+    const counterRef = ref(db, "deviceCounter");
+    const result = await runTransaction(counterRef, current => (current || 0) + 1);
+    const number = result.snapshot.val();
+    deviceID = "NP-" + String(number).padStart(4, "0");
+    localStorage.setItem("deviceID", deviceID);
+  }
+  deviceIdBox.textContent = deviceID;
+}
+
+function addMessageToScreen(msg){
+  const line = document.createElement("div");
+  line.className = "log-line";
+  line.innerHTML = `<span class="from">${msg.deviceID || "UNKNOWN"}</span>${msg.text}`;
+  screen.appendChild(line);
+  screen.scrollTop = screen.scrollHeight;
+}
+
+await registerDevice();
+
+sendBtn.onclick = () => {
+  const text = input.value.trim();
+  if(!text) return;
+
+  push(messagesRef, {
+    deviceID: deviceID,
+    text: text,
+    time: Date.now()
+  });
+
+  input.value = "";
+  beep(950, 70);
+};
+
+clearBtn.onclick = () => {
+  input.value = "";
+};
+
+soundBtn.onclick = () => {
+  soundEnabled = !soundEnabled;
+  soundBtn.textContent = soundEnabled ? "SOUND ON" : "SOUND OFF";
+  if(soundEnabled) beep(700, 60);
+};
+
+onChildAdded(messagesRef, (data) => {
+  const msg = data.val();
+  addMessageToScreen(msg);
+  if(msg.deviceID !== deviceID){
+    beep(620, 120);
+  }
+});
+</script>
 
 </body>
 </html>
