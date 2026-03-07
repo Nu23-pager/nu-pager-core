@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>NuPager Core V2</title>
+<title>NU-PAGER v2</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -213,62 +213,66 @@ button{
 }
 </style>
 </head>
+
 <body>
 
 <div class="device">
-  <div class="header">
-    <div class="header-left">
-      <div class="title">NU-PAGER</div>
-      <div class="sub">REBEL SIGNAL DEVICE</div>
-    </div>
-    <div class="device-id" id="deviceId">NP-0007</div>
-  </div>
 
-  <div class="screen" id="screen">
-    <div class="screen-header">
-      <span id="screenTarget">CHANNEL : OPEN</span>
-      <span class="signal-bars">▂▃▄▅▆</span>
-    </div>
-  </div>
+<div class="header">
+<div class="header-left">
+<div class="title">NU-PAGER</div>
+<div class="sub">REBEL SIGNAL DEVICE</div>
+</div>
+<div class="device-id" id="deviceId">NP-0000</div>
+</div>
 
-  <input id="msg" class="inputbox" placeholder="ENTER MESSAGE...">
+<div class="screen" id="screen">
+<div class="screen-header">
+<span id="screenTarget">CHANNEL : OPEN</span>
+<span class="signal-bars">▂▃▄▅▆</span>
+</div>
+</div>
 
-  <div class="controls">
-    <button id="clearBtn" class="clear" type="button">CLEAR</button>
-    <button id="sendBtn" class="send" type="button">SEND</button>
-    <button id="soundBtn" class="sound" type="button">SOUND ON</button>
-  </div>
+<input id="msg" class="inputbox" placeholder="ENTER MESSAGE...">
 
-  <div class="status">
-    ONLINE <span class="online"></span>
-  </div>
+<div class="controls">
+<button id="clearBtn" class="clear">CLEAR</button>
+<button id="sendBtn" class="send">SEND</button>
+<button id="soundBtn" class="sound">SOUND ON</button>
+</div>
 
-  <div class="radar">
-    <div class="radar-ring r1"></div>
-    <div class="radar-ring r2"></div>
-    <div class="radar-ring r3"></div>
-    <div class="radar-ring r4"></div>
-    <div class="radar-label">RADAR CONTACT</div>
-  </div>
+<div class="status">
+ONLINE <span class="online"></span>
+</div>
+
+<div class="radar">
+<div class="radar-ring r1"></div>
+<div class="radar-ring r2"></div>
+<div class="radar-ring r3"></div>
+<div class="radar-ring r4"></div>
+<div class="radar-label">RADAR CONTACT</div>
+</div>
+
 </div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, push, onChildAdded, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDHCoBm1A-OXNYIgX6TXAXAovkb5P_hJs4",
-  authDomain: "nu-pager-network.firebaseapp.com",
-  databaseURL: "https://nu-pager-network-default-rtdb.firebaseio.com",
-  projectId: "nu-pager-network",
-  storageBucket: "nu-pager-network.firebasestorage.app",
-  messagingSenderId: "1037097080836",
-  appId: "1:1037097080836:web:cf63b5d9125ef13c6cfd51"
+apiKey: "AIzaSyDHCoBm1A-OXNYIgX6TXAXAovkb5P_hJs4",
+authDomain: "nu-pager-network.firebaseapp.com",
+databaseURL: "https://nu-pager-network-default-rtdb.firebaseio.com",
+projectId: "nu-pager-network",
+storageBucket: "nu-pager-network.firebasestorage.app",
+messagingSenderId: "1037097080836",
+appId: "1:1037097080836:web:cf63b5d9125ef13c6cfd51"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const messagesRef = ref(db, "messages");
+const messagesRef = ref(db,"messages");
 
 const input = document.getElementById("msg");
 const sendBtn = document.getElementById("sendBtn");
@@ -278,87 +282,103 @@ const screen = document.getElementById("screen");
 const deviceBox = document.getElementById("deviceId");
 
 let soundEnabled = true;
+let audioCtx = null;
+
+function unlockAudio(){
+if(!audioCtx){
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+audioCtx = new AudioCtx();
+}
+if(audioCtx.state==="suspended"){
+audioCtx.resume();
+}
+}
+
+document.addEventListener("touchstart",unlockAudio,{once:true});
+document.addEventListener("click",unlockAudio,{once:true});
+
+function beep(freq=880,duration=80){
+if(!soundEnabled) return;
+unlockAudio();
+if(!audioCtx) return;
+
+const osc = audioCtx.createOscillator();
+const gain = audioCtx.createGain();
+
+osc.type="square";
+osc.frequency.value=freq;
+gain.gain.value=0.03;
+
+osc.connect(gain);
+gain.connect(audioCtx.destination);
+
+osc.start();
+osc.stop(audioCtx.currentTime + duration/1000);
+}
+
 let deviceID = localStorage.getItem("deviceID");
 
-function beep(freq = 880, duration = 80){
-  if(!soundEnabled) return;
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  const ctx = new AudioCtx();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.type = "square";
-  osc.frequency.value = freq;
-  gain.gain.value = 0.03;
-
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start();
-
-  setTimeout(() => {
-    osc.stop();
-    ctx.close();
-  }, duration);
-}
-
 async function registerDevice(){
-  if(!deviceID){
-    const counterRef = ref(db, "deviceCounter");
-    const result = await runTransaction(counterRef, current => (current || 0) + 1);
-    const number = result.snapshot.val();
-    deviceID = "NP-" + String(number).padStart(4, "0");
-    localStorage.setItem("deviceID", deviceID);
-  }
-  deviceBox.textContent = deviceID;
+if(!deviceID){
+const counterRef = ref(db,"deviceCounter");
+const result = await runTransaction(counterRef,(c)=>(c||0)+1);
+const number = result.snapshot.val();
+deviceID="NP-"+String(number).padStart(4,"0");
+localStorage.setItem("deviceID",deviceID);
+}
+deviceBox.textContent=deviceID;
 }
 
-function addMessageToScreen(device, text){
-  const line = document.createElement("div");
-  line.className = "log-line";
-  line.innerHTML = '<span class="from">' + device + '</span>' + text;
-  screen.appendChild(line);
-  screen.scrollTop = screen.scrollHeight;
+function addMessage(device,text){
+const line=document.createElement("div");
+line.className="log-line";
+line.innerHTML='<span class="from">'+device+'</span>'+text;
+screen.appendChild(line);
+screen.scrollTop=screen.scrollHeight;
 }
 
 await registerDevice();
 
-sendBtn.addEventListener("click", () => {
-  const text = input.value.trim();
-  if(!text) return;
+sendBtn.addEventListener("click",()=>{
+unlockAudio();
+const text=input.value.trim();
+if(!text) return;
 
-  push(messagesRef, {
-    deviceID: deviceID,
-    text: text,
-    time: Date.now()
-  });
-
-  input.value = "";
-  beep(950, 70);
+push(messagesRef,{
+deviceID:deviceID,
+text:text,
+time:Date.now()
 });
 
-clearBtn.addEventListener("click", () => {
-  input.value = "";
-  screen.innerHTML = `
-    <div class="screen-header">
-      <span id="screenTarget">CHANNEL : OPEN</span>
-      <span class="signal-bars">▂▃▄▅▆</span>
-    </div>
-  `;
+input.value="";
+beep(950,80);
 });
 
-soundBtn.addEventListener("click", () => {
-  soundEnabled = !soundEnabled;
-  soundBtn.textContent = soundEnabled ? "SOUND ON" : "SOUND OFF";
-  if(soundEnabled) beep(700, 60);
+clearBtn.addEventListener("click",()=>{
+input.value="";
+screen.innerHTML=`
+<div class="screen-header">
+<span id="screenTarget">CHANNEL : OPEN</span>
+<span class="signal-bars">▂▃▄▅▆</span>
+</div>
+`;
 });
 
-onChildAdded(messagesRef, (snapshot) => {
-  const msg = snapshot.val();
-  addMessageToScreen(msg.deviceID || "UNKNOWN", msg.text || "");
-  if(msg.deviceID !== deviceID){
-    beep(620, 120);
-  }
+soundBtn.addEventListener("click",()=>{
+unlockAudio();
+soundEnabled=!soundEnabled;
+soundBtn.textContent=soundEnabled?"SOUND ON":"SOUND OFF";
+if(soundEnabled) beep(700,120);
 });
+
+onChildAdded(messagesRef,(snap)=>{
+const msg=snap.val();
+addMessage(msg.deviceID||"UNKNOWN",msg.text||"");
+if(msg.deviceID!==deviceID){
+beep(620,120);
+}
+});
+
 </script>
 
 </body>
