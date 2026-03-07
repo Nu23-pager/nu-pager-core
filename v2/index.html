@@ -158,17 +158,16 @@ button{
 
 .radar{
   margin-top:12px;
-  height:170px;
-  background:#000;
+  width:100%;
+  aspect-ratio:1/1;
+  background:
+    radial-gradient(circle at center, rgba(0,255,100,.04) 0%, rgba(0,0,0,0) 60%),
+    #000;
   border-radius:50%;
   border:4px solid #15d63f;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#23ff5c;
-  font-size:14px;
   position:relative;
   overflow:hidden;
+  box-shadow:inset 0 0 20px rgba(0,255,100,.08);
 }
 
 .radar::before,
@@ -182,12 +181,14 @@ button{
   width:2px;
   height:100%;
   left:50%;
+  top:0;
   transform:translateX(-50%);
 }
 
 .radar::after{
   height:2px;
   width:100%;
+  left:0;
   top:50%;
   transform:translateY(-50%);
 }
@@ -196,16 +197,110 @@ button{
   position:absolute;
   border:1px solid rgba(60,255,100,.25);
   border-radius:50%;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
 }
 
-.r1{ width:40px; height:40px; }
-.r2{ width:80px; height:80px; }
-.r3{ width:120px; height:120px; }
-.r4{ width:160px; height:160px; }
+.r1{ width:42px; height:42px; }
+.r2{ width:84px; height:84px; }
+.r3{ width:126px; height:126px; }
+.r4{ width:168px; height:168px; }
+
+.radar-center{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  color:#60ff88;
+  font-size:10px;
+  z-index:3;
+  text-align:center;
+  pointer-events:none;
+}
+
+.sweep{
+  position:absolute;
+  width:50%;
+  height:2px;
+  left:50%;
+  top:50%;
+  transform-origin:left center;
+  animation:sweep 3.2s linear infinite;
+  z-index:2;
+}
+
+.sweep::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:-1px;
+  width:100%;
+  height:4px;
+  background:linear-gradient(90deg,
+    rgba(120,255,160,.95) 0%,
+    rgba(90,255,140,.55) 35%,
+    rgba(60,255,110,.18) 70%,
+    rgba(60,255,110,0) 100%);
+  box-shadow:
+    0 0 6px rgba(100,255,140,.65),
+    0 0 14px rgba(100,255,140,.30);
+  border-radius:3px;
+}
+
+@keyframes sweep{
+  from{ transform:rotate(0deg); }
+  to{ transform:rotate(360deg); }
+}
+
+.radar-dot{
+  position:absolute;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#79a987;
+  border:1px solid #d6e9cf;
+  box-shadow:0 0 4px rgba(160,255,190,.15);
+  cursor:pointer;
+  z-index:4;
+  transform:translate(-50%,-50%);
+}
+
+.radar-dot.selected{
+  background:#31ff61;
+  box-shadow:
+    0 0 6px rgba(60,255,110,.9),
+    0 0 14px rgba(60,255,110,.4);
+}
+
+.radar-dot-label{
+  position:absolute;
+  top:14px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:9px;
+  color:#8cff8c;
+  white-space:nowrap;
+  pointer-events:none;
+}
 
 .radar-label{
-  position:relative;
-  z-index:2;
+  position:absolute;
+  bottom:8px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:3;
+  color:#2dff67;
+  font-size:12px;
+  letter-spacing:1px;
+  opacity:.8;
+  pointer-events:none;
+}
+
+.target-note{
+  color:#222;
+  margin-top:6px;
+  font-size:12px;
 }
 
 @media (max-width:400px){
@@ -213,66 +308,70 @@ button{
 }
 </style>
 </head>
-
 <body>
 
 <div class="device">
 
-<div class="header">
-<div class="header-left">
-<div class="title">NU-PAGER</div>
-<div class="sub">REBEL SIGNAL DEVICE</div>
-</div>
-<div class="device-id" id="deviceId">NP-0000</div>
-</div>
+  <div class="header">
+    <div class="header-left">
+      <div class="title">NU-PAGER</div>
+      <div class="sub">REBEL SIGNAL DEVICE</div>
+    </div>
+    <div class="device-id" id="deviceId">NP-0000</div>
+  </div>
 
-<div class="screen" id="screen">
-<div class="screen-header">
-<span id="screenTarget">CHANNEL : OPEN</span>
-<span class="signal-bars">▂▃▄▅▆</span>
-</div>
-</div>
+  <div class="screen" id="screen">
+    <div class="screen-header">
+      <span id="screenTarget">CHANNEL : SELECT TARGET</span>
+      <span class="signal-bars">▂▃▄▅▆</span>
+    </div>
+  </div>
 
-<input id="msg" class="inputbox" placeholder="ENTER MESSAGE...">
+  <input id="msg" class="inputbox" placeholder="ENTER MESSAGE...">
 
-<div class="controls">
-<button id="clearBtn" class="clear">CLEAR</button>
-<button id="sendBtn" class="send">SEND</button>
-<button id="soundBtn" class="sound">SOUND ON</button>
-</div>
+  <div class="controls">
+    <button id="clearBtn" class="clear">CLEAR</button>
+    <button id="sendBtn" class="send">SEND</button>
+    <button id="soundBtn" class="sound">SOUND ON</button>
+  </div>
 
-<div class="status">
-ONLINE <span class="online"></span>
-</div>
+  <div class="status">
+    ONLINE <span class="online"></span>
+  </div>
 
-<div class="radar">
-<div class="radar-ring r1"></div>
-<div class="radar-ring r2"></div>
-<div class="radar-ring r3"></div>
-<div class="radar-ring r4"></div>
-<div class="radar-label">RADAR CONTACT</div>
-</div>
+  <div class="target-note" id="targetNote">TARGET LOCK : NONE</div>
+
+  <div class="radar" id="radar">
+    <div class="radar-ring r1"></div>
+    <div class="radar-ring r2"></div>
+    <div class="radar-ring r3"></div>
+    <div class="radar-ring r4"></div>
+    <div class="sweep"></div>
+    <div class="radar-center" id="radarCenter">YOU</div>
+    <div class="radar-label">RADAR CONTACT</div>
+  </div>
 
 </div>
 
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, onValue, runTransaction, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
-apiKey: "AIzaSyDHCoBm1A-OXNYIgX6TXAXAovkb5P_hJs4",
-authDomain: "nu-pager-network.firebaseapp.com",
-databaseURL: "https://nu-pager-network-default-rtdb.firebaseio.com",
-projectId: "nu-pager-network",
-storageBucket: "nu-pager-network.firebasestorage.app",
-messagingSenderId: "1037097080836",
-appId: "1:1037097080836:web:cf63b5d9125ef13c6cfd51"
+  apiKey: "AIzaSyDHCoBm1A-OXNYIgX6TXAXAovkb5P_hJs4",
+  authDomain: "nu-pager-network.firebaseapp.com",
+  databaseURL: "https://nu-pager-network-default-rtdb.firebaseio.com",
+  projectId: "nu-pager-network",
+  storageBucket: "nu-pager-network.firebasestorage.app",
+  messagingSenderId: "1037097080836",
+  appId: "1:1037097080836:web:cf63b5d9125ef13c6cfd51"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const messagesRef = ref(db,"messages");
+
+const messagesRef = ref(db, "messages");
+const devicesRef = ref(db, "devices");
 
 const input = document.getElementById("msg");
 const sendBtn = document.getElementById("sendBtn");
@@ -280,105 +379,195 @@ const clearBtn = document.getElementById("clearBtn");
 const soundBtn = document.getElementById("soundBtn");
 const screen = document.getElementById("screen");
 const deviceBox = document.getElementById("deviceId");
+const screenTarget = document.getElementById("screenTarget");
+const targetNote = document.getElementById("targetNote");
+const radar = document.getElementById("radar");
 
 let soundEnabled = true;
 let audioCtx = null;
+let deviceID = localStorage.getItem("deviceID");
+let selectedTarget = null;
+let devicesMap = {};
 
 function unlockAudio(){
-if(!audioCtx){
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-audioCtx = new AudioCtx();
-}
-if(audioCtx.state==="suspended"){
-audioCtx.resume();
-}
-}
-
-document.addEventListener("touchstart",unlockAudio,{once:true});
-document.addEventListener("click",unlockAudio,{once:true});
-
-function beep(freq=880,duration=80){
-if(!soundEnabled) return;
-unlockAudio();
-if(!audioCtx) return;
-
-const osc = audioCtx.createOscillator();
-const gain = audioCtx.createGain();
-
-osc.type="square";
-osc.frequency.value=freq;
-gain.gain.value=0.03;
-
-osc.connect(gain);
-gain.connect(audioCtx.destination);
-
-osc.start();
-osc.stop(audioCtx.currentTime + duration/1000);
+  if(!audioCtx){
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioCtx();
+  }
+  if(audioCtx.state === "suspended"){
+    audioCtx.resume();
+  }
 }
 
-let deviceID = localStorage.getItem("deviceID");
+document.addEventListener("touchstart", unlockAudio, { once:true });
+document.addEventListener("click", unlockAudio, { once:true });
+
+function beep(freq=880, duration=80, volume=0.03){
+  if(!soundEnabled) return;
+  unlockAudio();
+  if(!audioCtx) return;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = "sine";
+  osc.frequency.value = freq;
+  gain.gain.value = volume;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration/1000);
+}
+
+function radarBeep(){
+  beep(700, 45, 0.012);
+}
+
+function sendBeep(){
+  beep(950, 80, 0.03);
+}
+
+function receiveBeep(){
+  beep(620, 120, 0.035);
+}
 
 async function registerDevice(){
-if(!deviceID){
-const counterRef = ref(db,"deviceCounter");
-const result = await runTransaction(counterRef,(c)=>(c||0)+1);
-const number = result.snapshot.val();
-deviceID="NP-"+String(number).padStart(4,"0");
-localStorage.setItem("deviceID",deviceID);
-}
-deviceBox.textContent=deviceID;
+  if(!deviceID){
+    const counterRef = ref(db, "deviceCounter");
+    const result = await runTransaction(counterRef, current => (current || 0) + 1);
+    const number = result.snapshot.val();
+    deviceID = "NP-" + String(number).padStart(4, "0");
+    localStorage.setItem("deviceID", deviceID);
+  }
+  deviceBox.textContent = deviceID;
+  document.getElementById("radarCenter").textContent = deviceID;
 }
 
-function addMessage(device,text){
-const line=document.createElement("div");
-line.className="log-line";
-line.innerHTML='<span class="from">'+device+'</span>'+text;
-screen.appendChild(line);
-screen.scrollTop=screen.scrollHeight;
+async function registerPresence(){
+  const myDeviceRef = ref(db, "devices/" + deviceID);
+  const existing = await get(myDeviceRef);
+  const old = existing.val() || {};
+  await set(myDeviceRef, {
+    id: deviceID,
+    x: old.x ?? (20 + Math.floor(Math.random() * 60)),
+    y: old.y ?? (20 + Math.floor(Math.random() * 60)),
+    updatedAt: Date.now()
+  });
+}
+
+function addMessageToScreen(from, text){
+  const line = document.createElement("div");
+  line.className = "log-line";
+  line.innerHTML = '<span class="from">' + from + '</span>' + text;
+  screen.appendChild(line);
+  screen.scrollTop = screen.scrollHeight;
+}
+
+function setTarget(target){
+  selectedTarget = target;
+  screenTarget.textContent = "CHANNEL : " + target;
+  targetNote.textContent = "TARGET LOCK : " + target;
+
+  document.querySelectorAll(".radar-dot").forEach(dot => {
+    if(dot.dataset.id === target){
+      dot.classList.add("selected");
+    }else{
+      dot.classList.remove("selected");
+    }
+  });
+
+  radarBeep();
+}
+
+function renderRadar(devices){
+  document.querySelectorAll(".radar-dot").forEach(el => el.remove());
+
+  Object.values(devices).forEach(dev => {
+    if(!dev || !dev.id || dev.id === deviceID) return;
+
+    const dot = document.createElement("div");
+    dot.className = "radar-dot";
+    dot.dataset.id = dev.id;
+    dot.style.left = (dev.x || 50) + "%";
+    dot.style.top = (dev.y || 50) + "%";
+
+    const label = document.createElement("div");
+    label.className = "radar-dot-label";
+    label.textContent = dev.id;
+
+    dot.appendChild(label);
+
+    if(selectedTarget === dev.id){
+      dot.classList.add("selected");
+    }
+
+    dot.addEventListener("click", () => {
+      setTarget(dev.id);
+    });
+
+    radar.appendChild(dot);
+  });
 }
 
 await registerDevice();
+await registerPresence();
 
-sendBtn.addEventListener("click",()=>{
-unlockAudio();
-const text=input.value.trim();
-if(!text) return;
-
-push(messagesRef,{
-deviceID:deviceID,
-text:text,
-time:Date.now()
+clearBtn.addEventListener("click", () => {
+  input.value = "";
+  screen.innerHTML = `
+    <div class="screen-header">
+      <span id="screenTarget">CHANNEL : ${selectedTarget || "SELECT TARGET"}</span>
+      <span class="signal-bars">▂▃▄▅▆</span>
+    </div>
+  `;
 });
 
-input.value="";
-beep(950,80);
+soundBtn.addEventListener("click", () => {
+  unlockAudio();
+  soundEnabled = !soundEnabled;
+  soundBtn.textContent = soundEnabled ? "SOUND ON" : "SOUND OFF";
+  if(soundEnabled) beep(700, 120, 0.025);
 });
 
-clearBtn.addEventListener("click",()=>{
-input.value="";
-screen.innerHTML=`
-<div class="screen-header">
-<span id="screenTarget">CHANNEL : OPEN</span>
-<span class="signal-bars">▂▃▄▅▆</span>
-</div>
-`;
+sendBtn.addEventListener("click", () => {
+  unlockAudio();
+
+  const text = input.value.trim();
+  if(!text) return;
+
+  if(!selectedTarget){
+    alert("LOCK TARGET ON RADAR FIRST");
+    return;
+  }
+
+  push(messagesRef, {
+    from: deviceID,
+    to: selectedTarget,
+    text: text,
+    time: Date.now()
+  });
+
+  addMessageToScreen("TO " + selectedTarget, text);
+  input.value = "";
+  sendBeep();
 });
 
-soundBtn.addEventListener("click",()=>{
-unlockAudio();
-soundEnabled=!soundEnabled;
-soundBtn.textContent=soundEnabled?"SOUND ON":"SOUND OFF";
-if(soundEnabled) beep(700,120);
+onValue(devicesRef, (snapshot) => {
+  devicesMap = snapshot.val() || {};
+  renderRadar(devicesMap);
 });
 
-onChildAdded(messagesRef,(snap)=>{
-const msg=snap.val();
-addMessage(msg.deviceID||"UNKNOWN",msg.text||"");
-if(msg.deviceID!==deviceID){
-beep(620,120);
-}
-});
+onChildAdded(messagesRef, (snapshot) => {
+  const msg = snapshot.val();
+  if(!msg) return;
 
+  if(msg.to === deviceID){
+    addMessageToScreen(msg.from || "UNKNOWN", msg.text || "");
+    receiveBeep();
+  }
+});
 </script>
 
 </body>
