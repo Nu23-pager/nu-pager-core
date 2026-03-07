@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>NU-PAGER v2.2</title>
+<title>NU-PAGER v2.3</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
 <style>
 :root{
@@ -133,6 +136,7 @@ button{
   border-radius:6px;
   font-weight:bold;
   font-family:monospace;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .clear{
@@ -357,6 +361,90 @@ button{
   pointer-events:none;
 }
 
+/* QR MODAL */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.75);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:99;
+  padding:18px;
+}
+
+.modal.show{
+  display:flex;
+}
+
+.modal-card{
+  width:min(360px, 94vw);
+  background:#d8d2c6;
+  border-radius:14px;
+  padding:14px;
+  border:2px solid #6d665b;
+  color:#222;
+}
+
+.modal-title{
+  font-weight:900;
+  font-size:18px;
+  margin-bottom:8px;
+}
+
+.modal-sub{
+  font-size:12px;
+  opacity:.8;
+  margin-bottom:10px;
+}
+
+.qr-box,
+.reader-box{
+  width:100%;
+  min-height:240px;
+  background:#fff;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  margin-bottom:10px;
+}
+
+#qrCode{
+  padding:10px;
+}
+
+.modal-actions{
+  display:flex;
+  gap:8px;
+}
+
+.modal-actions button{
+  flex:1;
+  padding:10px 8px;
+}
+
+.close-btn{
+  background:#333;
+  color:#fff;
+}
+
+.alt-btn{
+  background:#bfa06a;
+  color:#111;
+}
+
+.tip{
+  font-size:11px;
+  opacity:.8;
+  margin-top:8px;
+}
+
+.hidden{
+  display:none !important;
+}
+
 @media (max-width:400px){
   .device{ width:92vw; }
 }
@@ -414,6 +502,31 @@ button{
 
 </div>
 
+<!-- QR / CONTACT MODAL -->
+<div class="modal" id="qrModal">
+  <div class="modal-card">
+    <div class="modal-title" id="modalTitle">MY QR</div>
+    <div class="modal-sub" id="modalSub">NU-PAGER CONTACT</div>
+
+    <div class="qr-box" id="qrBox">
+      <div id="qrCode"></div>
+    </div>
+
+    <div class="reader-box hidden" id="readerBox">
+      <div id="qrReader" style="width:100%;"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="alt-btn" id="manualBtn">MANUAL</button>
+      <button class="close-btn" id="closeModalBtn">CLOSE</button>
+    </div>
+
+    <div class="tip">
+      Hold CLEAR = MY QR · Hold SEND = SCAN QR · Hold SOUND = CONTACT LIST
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, push, onChildAdded, onValue, runTransaction, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
@@ -435,22 +548,46 @@ const messagesRef = ref(db, "messages");
 const devicesRef = ref(db, "devices");
 
 const input = document.getElementById("msg");
-const sendBtn = document.getElementById("sendBtn");
 const clearBtn = document.getElementById("clearBtn");
+const sendBtn = document.getElementById("sendBtn");
 const soundBtn = document.getElementById("soundBtn");
 const modeBtn = document.getElementById("modeBtn");
-const modeLabel = document.getElementById("modeLabel");
+
 const screen = document.getElementById("screen");
 const deviceBox = document.getElementById("deviceId");
 const targetNote = document.getElementById("targetNote");
 const radar = document.getElementById("radar");
 const radarCenter = document.getElementById("radarCenter");
+const modeLabel = document.getElementById("modeLabel");
+
+const qrModal = document.getElementById("qrModal");
+const modalTitle = document.getElementById("modalTitle");
+const modalSub = document.getElementById("modalSub");
+const qrBox = document.getElementById("qrBox");
+const qrCode = document.getElementById("qrCode");
+const readerBox = document.getElementById("readerBox");
+const closeModalBtn = document.getElementById("closeModalBtn");
+const manualBtn = document.getElementById("manualBtn");
 
 let soundEnabled = true;
 let audioCtx = null;
 let deviceID = localStorage.getItem("deviceID");
+let callsign = localStorage.getItem("callsign") || "";
 let selectedTarget = null;
 let mode = "DIRECT";
+let contacts = JSON.parse(localStorage.getItem("contacts") || "{}");
+let recentMessages = [];
+let screenView = "MESSAGES";
+let scanner = null;
+
+function saveContacts(){
+  localStorage.setItem("contacts", JSON.stringify(contacts));
+}
+
+function getDisplayName(id){
+  if(!id) return "UNKNOWN";
+  return contacts[id] ? (contacts[id] + " · " + id) : id;
+}
 
 function unlockAudio(){
   if(!audioCtx){
@@ -489,6 +626,7 @@ function sendBeep(){ beep(950,80,0.03); }
 function receiveBeep(){ beep(620,120,0.035); }
 
 function currentChannelLabel(){
+  if(screenView === "CONTACTS") return "CONTACT LIST";
   if(mode === "ALL") return "CHANNEL : ALL";
   if(selectedTarget) return "CHANNEL : " + selectedTarget;
   return "CHANNEL : SELECT TARGET";
@@ -515,9 +653,54 @@ function applyModeUI(){
     targetNote.textContent = selectedTarget ? ("TARGET LOCK : " + selectedTarget) : "TARGET LOCK : NONE";
   }
 
-  const header = document.getElementById("screenTarget");
-  if(header){
-    header.textContent = currentChannelLabel();
+  renderScreen();
+}
+
+function renderScreen(){
+  screen.innerHTML = `
+    <div class="screen-header">
+      <span id="screenTarget">${currentChannelLabel()}</span>
+      <span class="signal-bars">▂▃▄▅▆</span>
+    </div>
+  `;
+
+  if(screenView === "CONTACTS"){
+    const ids = Object.keys(contacts).sort();
+    if(ids.length === 0){
+      const empty = document.createElement("div");
+      empty.className = "log-line";
+      empty.innerHTML = '<span class="from">NO CONTACTS</span>Hold CLEAR / SEND for QR';
+      screen.appendChild(empty);
+      return;
+    }
+
+    ids.forEach(id => {
+      const row = document.createElement("div");
+      row.className = "log-line";
+      row.innerHTML = '<span class="from">' + contacts[id] + '</span>' + id;
+      screen.appendChild(row);
+    });
+    return;
+  }
+
+  const slice = recentMessages.slice(-8);
+  slice.forEach(msg => {
+    const line = document.createElement("div");
+    line.className = "log-line";
+    line.innerHTML = '<span class="from">' + msg.from + '</span>' + msg.text;
+    screen.appendChild(line);
+  });
+
+  screen.scrollTop = screen.scrollHeight;
+}
+
+function addMessageToLog(fromLabel, text){
+  recentMessages.push({ from:fromLabel, text:text });
+  if(recentMessages.length > 50){
+    recentMessages = recentMessages.slice(-50);
+  }
+  if(screenView === "MESSAGES"){
+    renderScreen();
   }
 }
 
@@ -529,6 +712,13 @@ async function registerDevice(){
     deviceID = "NP-" + String(number).padStart(4, "0");
     localStorage.setItem("deviceID", deviceID);
   }
+
+  if(!callsign){
+    const entered = prompt("ENTER CALLSIGN", deviceID);
+    callsign = (entered && entered.trim()) ? entered.trim().toUpperCase() : deviceID;
+    localStorage.setItem("callsign", callsign);
+  }
+
   deviceBox.textContent = deviceID;
   radarCenter.textContent = deviceID;
 }
@@ -545,20 +735,11 @@ async function registerPresence(){
   });
 }
 
-function addMessageToScreen(from, text){
-  const line = document.createElement("div");
-  line.className = "log-line";
-  line.innerHTML = '<span class="from">' + from + '</span>' + text;
-  screen.appendChild(line);
-  screen.scrollTop = screen.scrollHeight;
-}
-
 function setTarget(target){
   selectedTarget = target;
+
   if(mode === "DIRECT"){
     targetNote.textContent = "TARGET LOCK : " + target;
-    const header = document.getElementById("screenTarget");
-    if(header) header.textContent = "CHANNEL : " + target;
   }
 
   document.querySelectorAll(".radar-dot").forEach(dot => {
@@ -570,6 +751,7 @@ function setTarget(target){
   });
 
   radarBeep();
+  renderScreen();
 }
 
 function renderRadar(devices){
@@ -594,7 +776,7 @@ function renderRadar(devices){
 
     const label = document.createElement("div");
     label.className = "radar-dot-label";
-    label.textContent = dev.id;
+    label.textContent = contacts[dev.id] || dev.id;
 
     dot.appendChild(label);
 
@@ -608,27 +790,190 @@ function renderRadar(devices){
   });
 }
 
+function openModal(){
+  qrModal.classList.add("show");
+}
+
+function closeModal(){
+  qrModal.classList.remove("show");
+  stopScanner();
+}
+
+function showMyQr(){
+  openModal();
+  modalTitle.textContent = "MY QR";
+  modalSub.textContent = callsign + " · " + deviceID;
+
+  qrBox.classList.remove("hidden");
+  readerBox.classList.add("hidden");
+  qrCode.innerHTML = "";
+
+  new QRCode(qrCode, {
+    text: "NUPAGER:" + deviceID + ":" + callsign,
+    width:220,
+    height:220,
+    colorDark:"#111111",
+    colorLight:"#ffffff"
+  });
+}
+
+function parseQrPayload(text){
+  if(!text || !text.startsWith("NUPAGER:")) return null;
+  const parts = text.split(":");
+  const id = parts[1];
+  const name = parts.slice(2).join(":") || id;
+  if(!id) return null;
+  return { id, name };
+}
+
+function saveContact(id, name){
+  contacts[id] = name || id;
+  saveContacts();
+  renderScreen();
+}
+
+async function startScanner(){
+  openModal();
+  modalTitle.textContent = "SCAN QR";
+  modalSub.textContent = "ADD CONTACT";
+
+  qrBox.classList.add("hidden");
+  readerBox.classList.remove("hidden");
+
+  const targetId = "qrReader";
+  document.getElementById(targetId).innerHTML = "";
+
+  try{
+    scanner = new Html5Qrcode(targetId);
+    await scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 220 },
+      (decodedText) => {
+        const parsed = parseQrPayload(decodedText);
+        if(parsed){
+          saveContact(parsed.id, parsed.name);
+          alert("CONTACT ADDED: " + parsed.name);
+          closeModal();
+        }
+      },
+      () => {}
+    );
+  }catch(err){
+    alert("CAMERA SCAN NOT READY ON THIS DEVICE. USE MANUAL.");
+  }
+}
+
+async function stopScanner(){
+  try{
+    if(scanner){
+      await scanner.stop();
+      await scanner.clear();
+      scanner = null;
+    }
+  }catch(e){}
+}
+
+function manualAddContact(){
+  const raw = prompt("PASTE QR TEXT\nExample: NUPAGER:NP-2090:WISANU");
+  if(!raw) return;
+  const parsed = parseQrPayload(raw.trim());
+  if(!parsed){
+    alert("INVALID QR TEXT");
+    return;
+  }
+  saveContact(parsed.id, parsed.name);
+  alert("CONTACT ADDED: " + parsed.name);
+  closeModal();
+}
+
+function toggleContactView(){
+  screenView = screenView === "MESSAGES" ? "CONTACTS" : "MESSAGES";
+  renderScreen();
+  radarBeep();
+}
+
+function bindPress(el, shortFn, longFn, holdMs = 650){
+  let timer = null;
+  let longFired = false;
+
+  el.addEventListener("pointerdown", (e) => {
+    longFired = false;
+    timer = setTimeout(() => {
+      longFired = true;
+      longFn(e);
+    }, holdMs);
+  });
+
+  el.addEventListener("pointerup", (e) => {
+    clearTimeout(timer);
+    if(!longFired){
+      shortFn(e);
+    }
+  });
+
+  el.addEventListener("pointerleave", () => clearTimeout(timer));
+  el.addEventListener("pointercancel", () => clearTimeout(timer));
+}
+
 await registerDevice();
 await registerPresence();
 applyModeUI();
+renderScreen();
 
-clearBtn.addEventListener("click", () => {
-  input.value = "";
-  screen.innerHTML = `
-    <div class="screen-header">
-      <span id="screenTarget">${currentChannelLabel()}</span>
-      <span class="signal-bars">▂▃▄▅▆</span>
-    </div>
-  `;
-  applyModeUI();
-});
+bindPress(clearBtn,
+  () => {
+    input.value = "";
+    recentMessages = [];
+    renderScreen();
+  },
+  () => {
+    showMyQr();
+  }
+);
 
-soundBtn.addEventListener("click", () => {
-  unlockAudio();
-  soundEnabled = !soundEnabled;
-  soundBtn.textContent = soundEnabled ? "SOUND ON" : "SOUND OFF";
-  if(soundEnabled) beep(700,120,0.025);
-});
+bindPress(sendBtn,
+  () => {
+    unlockAudio();
+
+    const text = input.value.trim();
+    if(!text) return;
+
+    if(mode === "DIRECT" && !selectedTarget){
+      alert("LOCK TARGET ON RADAR FIRST");
+      return;
+    }
+
+    const target = mode === "ALL" ? "ALL" : selectedTarget;
+
+    push(messagesRef, {
+      from: deviceID,
+      fromName: callsign,
+      to: target,
+      mode: mode,
+      text: text,
+      time: Date.now()
+    });
+
+    addMessageToLog("TO " + (contacts[target] || target), text);
+    input.value = "";
+    sendBeep();
+  },
+  () => {
+    startScanner();
+  }
+);
+
+bindPress(soundBtn,
+  () => {
+    unlockAudio();
+    soundEnabled = !soundEnabled;
+    soundBtn.textContent = soundEnabled ? "SOUND ON" : "SOUND OFF";
+    if(soundEnabled) beep(700,120,0.025);
+  },
+  () => {
+    toggleContactView();
+  }
+);
 
 modeBtn.addEventListener("click", () => {
   unlockAudio();
@@ -637,30 +982,10 @@ modeBtn.addEventListener("click", () => {
   radarBeep();
 });
 
-sendBtn.addEventListener("click", () => {
-  unlockAudio();
-
-  const text = input.value.trim();
-  if(!text) return;
-
-  if(mode === "DIRECT" && !selectedTarget){
-    alert("LOCK TARGET ON RADAR FIRST");
-    return;
-  }
-
-  const target = mode === "ALL" ? "ALL" : selectedTarget;
-
-  push(messagesRef, {
-    from: deviceID,
-    to: target,
-    mode: mode,
-    text: text,
-    time: Date.now()
-  });
-
-  addMessageToScreen("TO " + target, text);
-  input.value = "";
-  sendBeep();
+closeModalBtn.addEventListener("click", closeModal);
+manualBtn.addEventListener("click", manualAddContact);
+qrModal.addEventListener("click", (e) => {
+  if(e.target === qrModal) closeModal();
 });
 
 onValue(devicesRef, (snapshot) => {
@@ -687,12 +1012,17 @@ onChildAdded(messagesRef, (snapshot) => {
   const msg = snapshot.val();
   if(!msg) return;
 
+  if(msg.from === deviceID) return;
+
   if(msg.to === "ALL" || msg.to === deviceID){
-    if(msg.from === deviceID && msg.to !== "ALL") return;
-    addMessageToScreen(msg.from || "UNKNOWN", msg.text || "");
-    if(msg.from !== deviceID){
-      receiveBeep();
+    if(msg.fromName){
+      contacts[msg.from] = msg.fromName;
+      saveContacts();
     }
+
+    const fromLabel = contacts[msg.from] ? contacts[msg.from] : (msg.fromName || msg.from || "UNKNOWN");
+    addMessageToLog(fromLabel, msg.text || "");
+    receiveBeep();
   }
 });
 </script>
